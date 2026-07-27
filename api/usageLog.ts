@@ -4,7 +4,7 @@
  * One file per teacher + student per day avoids cross-student write races.
  */
 
-import { head, put } from "@vercel/blob";
+import { get, put } from "@vercel/blob";
 import { mkdir, appendFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -48,6 +48,23 @@ async function appendLocalFile(
   await appendFile(filePath, line, "utf8");
 }
 
+async function readBlobText(
+  pathname: string,
+  token: string
+): Promise<string | null> {
+  // Private blobs require authenticated get(); a plain fetch(url) returns 401
+  // and used to make every write overwrite the file with a single line.
+  // useCache: false so rapid sequential appends see the latest put.
+  const result = await get(pathname, {
+    access: "private",
+    token,
+    useCache: false,
+  });
+  if (!result?.stream) return null;
+
+  return new Response(result.stream).text();
+}
+
 async function appendBlobFile(
   teacherId: string,
   studentId: string,
@@ -60,17 +77,14 @@ async function appendBlobFile(
   let content = line;
 
   try {
-    const meta = await head(pathname, { token });
-    const res = await fetch(meta.url);
-    if (res.ok) {
-      const previous = await res.text();
-      content =
-        previous.endsWith("\n") || previous.length === 0
-          ? previous + line
-          : `${previous}\n${line}`;
+    const previous = await readBlobText(pathname, token);
+    if (previous !== null && previous.length > 0) {
+      content = previous.endsWith("\n")
+        ? previous + line
+        : `${previous}\n${line}`;
     }
   } catch {
-    /* first write for this pathname */
+    /* first write for this pathname, or transient read failure */
   }
 
   await put(pathname, content, {
