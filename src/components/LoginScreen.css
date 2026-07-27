@@ -1,0 +1,51 @@
+.login-card {
+  gap: 16px;
+  align-items: stretch;
+  text-align: left;
+}
+
+.login-card .card__title,
+.login-card .card__subtitle {
+  text-align: center;
+}
+
+.login-card .big-button {
+  align-self: center;
+  margin-top: 4px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.login-field__label {
+  font-size: clamp(0.95rem, 2.6vw, 1.08rem);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.login-field__input {
+  font-family: var(--font);
+  font-size: clamp(1rem, 2.8vw, 1.15rem);
+  color: var(--text);
+  background: #fff;
+  border: 2px solid #d8d3c8;
+  border-radius: 14px;
+  padding: 14px 16px;
+  outline: none;
+  transition: border-color var(--motion-med) var(--ease);
+}
+
+.login-field__input:focus {
+  border-color: var(--accent-button);
+}
+
+.login-error {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #b42318;
+  text-align: center;
+}

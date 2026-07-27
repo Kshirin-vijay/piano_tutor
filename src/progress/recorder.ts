@@ -6,6 +6,7 @@
  */
 
 import { onEvent } from "../config/events";
+import { logAppEvent } from "../logging/remoteLog";
 import { endSession, hydrateProgress, recordEvent } from "./progressStore";
 
 let initialized = false;
@@ -16,6 +17,7 @@ export function initProgressRecorder(): void {
 
   void hydrateProgress();
   onEvent(recordEvent);
+  onEvent(logAppEvent);
 
   if (typeof document !== "undefined") {
     document.addEventListener("visibilitychange", () => {

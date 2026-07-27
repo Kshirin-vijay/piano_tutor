@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { ensureSpeechReady, speak } from "../audio/speech";
+import { getSession, logout } from "../auth/session";
+import {
+  createStudent,
+  getActiveStudent,
+  listStudents,
+  setActiveStudent,
+} from "../auth/students";
+import { logEvent } from "../logging/remoteLog";
 import { getByPath } from "../config/appConfig";
+import { hydrateProgress } from "../progress/progressStore";
 import { resetConfig, setConfigValue } from "../config/actions";
 import { getSchema } from "../config/schema";
 import type { Setting } from "../config/schema";
@@ -12,6 +21,8 @@ import "./Settings.css";
 
 interface SettingsProps {
   onClose: () => void;
+  onLoggedOut: () => void;
+  onStudentChanged: () => void;
 }
 
 /** Friendlier group headings; falls back to the namespace name. */
@@ -24,14 +35,42 @@ function groupOf(path: string): string {
   return path.split(".")[0];
 }
 
-export default function Settings({ onClose }: SettingsProps) {
+export default function Settings({ onClose, onLoggedOut, onStudentChanged }: SettingsProps) {
   const [showProgress, setShowProgress] = useState(false);
   const config = useConfig();
   const schema = getSchema();
   const entries = Object.entries(schema) as [string, Setting][];
+  const session = getSession();
+  const activeStudent = getActiveStudent();
+  const students = listStudents();
 
   if (showProgress) {
     return <ProgressDashboard onClose={() => setShowProgress(false)} />;
+  }
+
+  function handleLogout() {
+    logout();
+    onLoggedOut();
+  }
+
+  function handleSwitchStudent(studentId: string) {
+    if (!setActiveStudent(studentId)) return;
+    logEvent("student.switched", { studentId });
+    void hydrateProgress();
+    onStudentChanged();
+    onClose();
+  }
+
+  function handleAddStudent() {
+    const student = createStudent();
+    if (!student) return;
+    logEvent("student.created", {
+      studentId: student.id,
+      studentLabel: student.label,
+    });
+    void hydrateProgress();
+    onStudentChanged();
+    onClose();
   }
 
   // Preserve schema order while grouping by namespace.
@@ -141,6 +180,31 @@ export default function Settings({ onClose }: SettingsProps) {
         ))}
 
         <section className="settings-group">
+          <h2 className="settings-group__title">Students</h2>
+          {activeStudent ? (
+            <p className="settings-account">
+              Playing as {activeStudent.label} ({activeStudent.id})
+            </p>
+          ) : null}
+          {students.map((student) => (
+            <button
+              key={student.id}
+              type="button"
+              className="text-button"
+              disabled={student.id === activeStudent?.id}
+              onClick={() => handleSwitchStudent(student.id)}
+            >
+              {student.id === activeStudent?.id
+                ? `${student.label} (current)`
+                : `Switch to ${student.label}`}
+            </button>
+          ))}
+          <button type="button" className="text-button" onClick={handleAddStudent}>
+            Add student
+          </button>
+        </section>
+
+        <section className="settings-group">
           <h2 className="settings-group__title">Progress</h2>
           <button
             type="button"
@@ -148,6 +212,22 @@ export default function Settings({ onClose }: SettingsProps) {
             onClick={() => setShowProgress(true)}
           >
             View practice progress
+          </button>
+        </section>
+
+        <section className="settings-group">
+          <h2 className="settings-group__title">Beta account</h2>
+          {session ? (
+            <p className="settings-account">
+              Signed in as {session.email} ({session.userId})
+            </p>
+          ) : null}
+          <button
+            type="button"
+            className="text-button"
+            onClick={handleLogout}
+          >
+            Log out
           </button>
         </section>
 

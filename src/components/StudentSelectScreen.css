@@ -1,0 +1,104 @@
+.student-select-card {
+  gap: 16px;
+  align-items: stretch;
+  text-align: left;
+  max-width: min(520px, 92vw);
+}
+
+.student-select-card .card__title,
+.student-select-card .card__subtitle {
+  text-align: center;
+}
+
+.student-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.student-list__button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 2px solid #d8d3c8;
+  border-radius: 14px;
+  background: #fff;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: border-color var(--motion-med) var(--ease);
+}
+
+.student-list__button:hover {
+  border-color: var(--accent-button);
+}
+
+.student-list__label {
+  font-size: clamp(1rem, 2.8vw, 1.15rem);
+  font-weight: 800;
+  color: var(--text);
+}
+
+.student-list__id {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.student-empty {
+  margin: 0;
+  text-align: center;
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.student-add {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 2px solid #efece4;
+}
+
+.student-add .big-button {
+  align-self: center;
+}
+
+.student-add__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.student-add__label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.student-add__input {
+  font-family: var(--font);
+  font-size: 1rem;
+  color: var(--text);
+  background: #fff;
+  border: 2px solid #d8d3c8;
+  border-radius: 14px;
+  padding: 12px 14px;
+  outline: none;
+}
+
+.student-add__input:focus {
+  border-color: var(--accent-button);
+}
+
+.student-error {
+  margin: 0;
+  text-align: center;
+  font-weight: 700;
+  color: #b42318;
+}

@@ -112,9 +112,10 @@ stats, plus a capped rolling log of recent events.
 - What is stored: totals (sessions, time practiced, correct taps, completions),
   per-level stats (starts, completions, clean vs replayed, last played), per-note
   success/mistake counts, recent sessions, and a capped recent-event log.
-- Where it is stored: on-device only, in `localStorage`, keyed by user
-  (`pianoFriend.progress.<userId>`). Today there is one local user (`getUserId()`
-  returns `"local"`). Nothing leaves the device.
+- Where it is stored: on-device in `localStorage`, keyed by teacher + student
+  (`pianoFriend.progress.<teacherId>__<studentId>`). Gameplay events are also
+  sent to the server and appended to a daily JSONL log file (Vercel Blob in
+  production, `logs/` folder locally).
 - Caregiver view: the grown-up Settings page has a "View practice progress" button
   that opens a read-only dashboard (and a "Clear history" action).
 - Agent access: the in-browser agent reads the full history through the same
@@ -122,10 +123,33 @@ stats, plus a capped rolling log of recent events.
   `getPerNoteStats`, `getRecentEvents`. Its loop is: read history -> analyze ->
   `setConfigValue(...)`.
 
-Migration-readiness: the store persists through a `ProgressRepository` interface
-(`LocalProgressRepository` today). A future server/native phase swaps in a remote,
-per-user implementation and a real `getUserId()`; the store, dashboard, and agent are
-unchanged. No accounts, sync, or export/import are built yet.
+## Beta access, students, and usage logs
+
+Closed beta uses a server-side email allowlist. Teachers log in, then create or
+pick students (`student1`, `student2`, …) before practice. Each student has
+separate on-device progress and a separate daily log file so concurrent class
+use does not overwrite entries.
+
+1. **Allowlist (server only)** — edit [`api/betaUsers.ts`](api/betaUsers.ts) to map
+   teacher emails to ids (`user1`, `user2`, …), then redeploy.
+2. **Login** — teacher enters their email (no password). Session persists in
+   `localStorage` (`pianoFriend.auth`).
+3. **Students** — after login, pick or add a student. Switch students from
+   Settings → Students. Roster is stored on-device per teacher.
+4. **Usage logs** — events POST to `/api/log` and append one JSON line per event.
+   File name: `usage-YYYY-MM-DD-<teacherId>-<studentId>.jsonl`.
+
+### Vercel Blob setup (production)
+
+1. In the Vercel project → **Storage** → **Blob** → create a store (if you have not already).
+2. Link the store to this project. Vercel adds `BLOB_READ_WRITE_TOKEN` automatically.
+3. Redeploy so serverless functions pick up the token.
+
+Logs are stored as private blobs under `logs/usage-YYYY-MM-DD-<teacherId>-<studentId>.jsonl`.
+View and download them from the Vercel dashboard → Storage → Blob.
+
+For **local dev** against real Blob storage, run `vercel env pull .env.local` (or paste
+`BLOB_READ_WRITE_TOKEN` into `.env.local`). Without the token, dev writes to `logs/` instead.
 
 ## Tech
 
@@ -142,6 +166,9 @@ npm run dev
 ```
 
 Then open the printed local URL (best on a tablet or in full screen).
+
+Replace the placeholder emails in `api/betaUsers.ts` with real beta tester
+emails before inviting anyone.
 
 ## Build
 
