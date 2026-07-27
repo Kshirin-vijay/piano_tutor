@@ -15,6 +15,7 @@ import {
 import { validateValue } from "./validate";
 import { addPhrase as addPhraseToRegistry } from "../audio/phrases";
 import type { PhraseDef } from "../audio/phrases";
+import { posthog } from "../analytics/posthog";
 
 export interface ActionResult {
   ok: boolean;
@@ -27,6 +28,7 @@ export function setConfigValue(path: string, value: unknown): ActionResult {
   const result = validateValue(path, value);
   if (!result.ok) return result;
   applyConfig(setByPath(getConfig(), path, result.value));
+  posthog.capture("settings_changed", { setting_path: path });
   return { ok: true, value: result.value };
 }
 
@@ -34,6 +36,7 @@ export function setConfigValue(path: string, value: unknown): ActionResult {
 export function resetConfig(path?: string): ActionResult {
   if (!path) {
     applyConfig(JSON.parse(JSON.stringify(DEFAULTS)));
+    posthog.capture("config_reset");
     return { ok: true };
   }
   const def = getByPath(DEFAULTS, path);

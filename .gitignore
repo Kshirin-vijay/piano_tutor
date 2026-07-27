@@ -11,3 +11,4 @@ dev-dist
 tsconfig.tsbuildinfo
 tmp_samples/
 .cursor/
+.env

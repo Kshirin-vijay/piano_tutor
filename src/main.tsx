@@ -3,10 +3,12 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import OrientationGate from "./components/OrientationGate";
 import { initProgressRecorder } from "./progress/recorder";
+import { initPostHog } from "./analytics/posthog";
 import "./styles/theme.css";
 
 // Begin recording practice history before the app mounts so every event is captured.
 initProgressRecorder();
+initPostHog();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

@@ -1,5 +1,6 @@
 import { SONGS } from "../songs/songs";
 import type { Song } from "../songs/songs";
+import { posthog } from "../analytics/posthog";
 import MusicDecor from "./MusicDecor";
 import "./Screen.css";
 import "./SongSelect.css";
@@ -38,7 +39,12 @@ export default function SongSelect({
               type="button"
               className={`song-item ${song.available ? "" : "is-soon"}`}
               disabled={!song.available}
-              onClick={() => song.available && onPick(song)}
+              onClick={() => {
+                if (song.available) {
+                  posthog.capture("song_selected", { song_id: song.id, song_title: song.title });
+                  onPick(song);
+                }
+              }}
             >
               <span className="song-item__note">{"\u266B"}</span>
               <span className="song-item__title">{song.title}</span>
@@ -49,7 +55,10 @@ export default function SongSelect({
           <button
             type="button"
             className="song-select__next"
-            onClick={onNext}
+            onClick={() => {
+              posthog.capture("next_level_after_song");
+              onNext();
+            }}
           >
             Go to next level {"\u2192"}
           </button>
