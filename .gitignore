@@ -1,0 +1,13 @@
+node_modules
+dist
+dist-ssr
+dev-dist
+*.local
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# Build artifacts and local tooling
+tsconfig.tsbuildinfo
+tmp_samples/
+.cursor/

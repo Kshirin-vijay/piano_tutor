@@ -1,0 +1,153 @@
+.hold-track {
+  position: relative;
+  width: 100%;
+  min-height: 96px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 8px;
+}
+
+.hold-track__inner {
+  position: relative;
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  will-change: transform;
+  transition: transform 300ms var(--ease);
+}
+
+/* One column: the bar on top, its sing-along syllable underneath. */
+.hold-cell {
+  position: relative;
+  flex: 0 0 auto;
+  transition: opacity var(--motion-med) var(--ease),
+    transform var(--motion-med) var(--ease);
+}
+
+.hold-bar {
+  position: relative;
+  width: 100%;
+  height: 52px;
+  border: 3px solid var(--bar);
+  border-radius: 12px;
+  background: #fbf9f4;
+  overflow: hidden;
+}
+
+.bar-c {
+  --bar: var(--glow-c);
+}
+.bar-d {
+  --bar: var(--glow-d);
+}
+.bar-e {
+  --bar: var(--glow-e);
+}
+.bar-f {
+  --bar: var(--glow-f);
+}
+.bar-g {
+  --bar: var(--glow-g);
+}
+.bar-a {
+  --bar: var(--glow-a);
+}
+.bar-b {
+  --bar: var(--glow-b);
+}
+.bar-rest {
+  --bar: #c7c2b6;
+}
+
+/* The current column stands out; done and upcoming columns stay quiet. */
+.hold-cell.is-current {
+  opacity: 1;
+  transform: scale(1.06);
+}
+.hold-cell.is-upcoming {
+  opacity: 0.4;
+}
+.hold-cell.is-done {
+  opacity: 0.25;
+}
+
+.hold-bar__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--bar);
+  transition: width 60ms linear;
+}
+
+/* Released early: very light flash to invite continuing the hold. */
+.hold-bar__fill.is-paused {
+  animation: hold-flash 1.1s var(--ease) infinite;
+}
+
+@keyframes hold-flash {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+.hold-bar__tick {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.12);
+  transform: translateX(-1px);
+}
+
+.hold-bar__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: var(--text);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.bar-rest .hold-bar__label {
+  font-size: 1rem;
+  letter-spacing: 2px;
+  color: var(--text-soft);
+}
+
+/* Sing-along syllable centered just below its bar. Absolute so wide words do
+   not change bar widths or disturb the carousel centering. */
+.hold-bar__lyric {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  pointer-events: none;
+}
+
+/* Dash drawn in the gap to the next note, so a split word reads as "Ma-ry". */
+.hold-bar__lyric-join {
+  position: absolute;
+  top: 100%;
+  left: calc(100% + 14px);
+  transform: translateX(-50%);
+  margin-top: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  pointer-events: none;
+}

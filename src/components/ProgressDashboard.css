@@ -1,0 +1,146 @@
+.progress-card {
+  gap: 14px;
+  text-align: left;
+  align-items: stretch;
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.progress-card .card__title,
+.progress-card .card__subtitle {
+  text-align: center;
+}
+
+.progress-empty {
+  text-align: center;
+  color: var(--text-soft);
+  font-size: 1.05rem;
+  padding: 12px 0;
+}
+
+.progress-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.progress-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  background: #faf8f3;
+  border: 2px solid #efece4;
+  border-radius: 14px;
+}
+
+.progress-stat strong {
+  font-size: clamp(1.3rem, 4vw, 1.7rem);
+  color: var(--text);
+}
+
+.progress-stat span {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.progress-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 2px solid #efece4;
+}
+
+.progress-group__title {
+  margin: 0;
+  font-size: clamp(1rem, 3vw, 1.2rem);
+  font-weight: 800;
+  color: var(--text-soft);
+}
+
+/* Notes */
+.progress-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-note__name {
+  width: 24px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.progress-note__bar {
+  flex: 1;
+  height: 12px;
+  border-radius: 999px;
+  background: #ece8df;
+  overflow: hidden;
+}
+
+.progress-note__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--key-e);
+  transition: width var(--motion-med) var(--ease);
+}
+
+.progress-note__pct {
+  width: 64px;
+  text-align: right;
+  font-weight: 800;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.progress-note__pct small {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+/* Lists */
+.progress-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #faf8f3;
+  border: 2px solid #efece4;
+  border-radius: 12px;
+}
+
+.progress-row__title {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.progress-row__meta {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-soft);
+  white-space: nowrap;
+}

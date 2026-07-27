@@ -1,0 +1,245 @@
+.finger-level {
+  position: relative;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(16px, 4vh, 34px) 16px clamp(18px, 4vh, 34px);
+  gap: 16px;
+  overflow: hidden;
+}
+
+.finger-level > *:not(.music-decor) {
+  position: relative;
+  z-index: 1;
+}
+
+.finger-level__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.finger-level__eyebrow {
+  color: var(--text-soft);
+  font-size: clamp(0.95rem, 2.5vw, 1.08rem);
+  font-weight: 700;
+}
+
+.finger-level__title {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(1.75rem, 5vw, 2.7rem);
+  line-height: 1.05;
+}
+
+.finger-level__intro {
+  flex: 1;
+  width: min(960px, 96vw);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.both-hands-graphic {
+  position: relative;
+  width: min(920px, 94vw);
+  aspect-ratio: 1266 / 726;
+  animation: hands-settle 720ms var(--ease) both;
+}
+
+.both-hands-graphic img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.finger-level__focus {
+  flex: 1;
+  width: min(1040px, 96vw);
+  display: grid;
+  grid-template-columns: minmax(290px, 1fr) minmax(260px, 360px);
+  align-items: center;
+  justify-items: center;
+  gap: clamp(16px, 4vw, 44px);
+  animation: hand-focus-slide 640ms var(--ease) both;
+}
+
+.finger-level__focus--left {
+  animation-name: hand-focus-slide-left;
+}
+
+.finger-level__hand-zone {
+  width: min(460px, 84vw);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finger-level__panel {
+  min-height: 260px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.finger-level__ordinal {
+  color: var(--text);
+  font-size: clamp(3.8rem, 12vw, 7.2rem);
+  font-weight: 900;
+  line-height: 0.95;
+}
+
+.finger-level__prompt {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.finger-level__answers {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 10px;
+}
+
+.finger-level__answer {
+  min-height: 86px;
+  border: 3px solid rgba(58, 58, 64, 0.14);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--text);
+  font-family: var(--font);
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  box-shadow: 0 6px 0 rgba(58, 58, 64, 0.12);
+  transition: transform var(--motion-med) var(--ease),
+    border-color var(--motion-med) var(--ease),
+    background var(--motion-med) var(--ease);
+}
+
+.finger-level__answer:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 rgba(58, 58, 64, 0.12);
+}
+
+.finger-level__answer span {
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
+}
+
+.finger-level__answer small {
+  color: var(--text-soft);
+  font-size: 0.9rem;
+}
+
+.finger-level__answer.is-correct {
+  border-color: var(--key-e);
+  background: #e7f5eb;
+}
+
+.finger-level__answer.is-wrong {
+  border-color: #c95d5d;
+  background: #fff1f1;
+}
+
+.finger-level__quiz-note {
+  min-height: 1.3em;
+  color: var(--text-soft);
+  font-size: clamp(1rem, 3vw, 1.25rem);
+  font-weight: 800;
+}
+
+.hand-graphic {
+  position: relative;
+  width: min(100%, 430px);
+  aspect-ratio: 1 / 1.18;
+  overflow: visible;
+}
+
+.hand-graphic--compact {
+  width: min(40vw, 300px);
+}
+
+.hand-graphic img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@keyframes hands-settle {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hand-focus-slide {
+  from {
+    opacity: 0;
+    transform: translateX(12vw);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes hand-focus-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(-12vw);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .finger-level {
+    justify-content: flex-start;
+  }
+
+  .finger-level__focus {
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 8px;
+  }
+
+  .finger-level__hand-zone {
+    width: min(350px, 88vw);
+  }
+
+  .finger-level__panel {
+    min-height: 210px;
+  }
+
+  .hand-graphic--compact {
+    width: min(45vw, 220px);
+  }
+
+  .both-hands-graphic {
+    width: min(560px, 94vw);
+  }
+}

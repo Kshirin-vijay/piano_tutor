@@ -1,0 +1,209 @@
+.start-menu {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 92vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(22px, 5vh, 38px);
+  padding: clamp(20px, 4vh, 34px) 0;
+}
+
+.game-logo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: clamp(150px, 28vh, 230px);
+}
+
+.game-logo h1 {
+  margin: 0;
+  display: grid;
+  gap: 0;
+  color: #ffffff;
+  font-family: "Trebuchet MS", "Arial Rounded MT Bold", "Arial", sans-serif;
+  font-size: clamp(3.4rem, 13vw, 7.2rem);
+  font-weight: 900;
+  line-height: 0.8;
+  letter-spacing: 0;
+  text-align: center;
+  text-shadow:
+    -4px -4px 0 #123868,
+    4px -4px 0 #123868,
+    -4px 4px 0 #123868,
+    4px 4px 0 #123868,
+    0 8px 0 rgba(47, 127, 214, 0.72),
+    0 16px 28px rgba(9, 43, 83, 0.28);
+}
+
+.game-logo h1 span:last-child {
+  color: #dff7ff;
+}
+
+.game-logo__note,
+.game-logo__sparkle {
+  position: absolute;
+  color: #ffffff;
+  text-shadow: 0 4px 14px rgba(31, 94, 161, 0.34);
+  pointer-events: none;
+}
+
+.game-logo__note {
+  top: 8%;
+  right: 9%;
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  transform: rotate(12deg);
+}
+
+.game-logo__sparkle {
+  font-size: clamp(1.5rem, 4vw, 2.4rem);
+}
+
+.game-logo__sparkle--left {
+  left: 4%;
+  top: 26%;
+}
+
+.game-logo__sparkle--right {
+  right: 0;
+  bottom: 20%;
+}
+
+.main-menu-buttons {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2.4vh, 16px);
+}
+
+.level-button {
+  width: 100%;
+  min-height: clamp(70px, 11vh, 88px);
+  display: grid;
+  grid-template-columns: 58px 1fr 36px;
+  align-items: center;
+  gap: 12px;
+  border: 3px solid rgba(255, 255, 255, 0.86);
+  border-radius: 999px;
+  padding: 10px 20px 10px 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(174, 224, 247, 0.82)),
+    rgba(121, 184, 224, 0.5);
+  color: #123868;
+  cursor: pointer;
+  font-family: var(--font);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 7px 0 rgba(47, 127, 214, 0.76),
+    0 14px 26px rgba(16, 68, 120, 0.18);
+  transition:
+    transform var(--motion-med) var(--ease),
+    box-shadow var(--motion-med) var(--ease),
+    opacity var(--motion-med) var(--ease);
+}
+
+.level-button--primary {
+  border-color: #ffffff;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #cef3ff 48%, #8dd5f5 100%),
+    rgba(121, 184, 224, 0.8);
+}
+
+.level-button:active {
+  transform: translateY(5px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 2px 0 rgba(47, 127, 214, 0.8),
+    0 8px 18px rgba(16, 68, 120, 0.16);
+}
+
+.level-button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.level-button__icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(18, 56, 104, 0.12);
+  color: #236da9;
+  font-size: 1.45rem;
+  font-weight: 900;
+}
+
+.level-button__content {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  text-align: left;
+}
+
+.level-button__label {
+  color: #123868;
+  font-size: clamp(1.25rem, 4vw, 1.72rem);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.level-button__progress {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(18, 56, 104, 0.14);
+  overflow: hidden;
+}
+
+.level-button__progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2f7fd6, #94e4ff);
+}
+
+.level-button__arrow {
+  color: #236da9;
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.start-over-button {
+  align-self: center;
+  min-height: 44px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  padding: 0 22px;
+  background: rgba(255, 255, 255, 0.34);
+  color: #123868;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 1rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(16, 68, 120, 0.12);
+}
+
+.game-icon-button {
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.54);
+  color: #123868;
+  font-weight: 900;
+}
+
+@media (max-height: 680px) {
+  .game-logo {
+    min-height: 112px;
+  }
+
+  .game-logo h1 {
+    font-size: clamp(2.8rem, 11vw, 5.4rem);
+  }
+
+  .level-button {
+    min-height: 62px;
+  }
+}

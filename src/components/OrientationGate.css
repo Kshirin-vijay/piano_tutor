@@ -1,0 +1,44 @@
+.orientation-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px;
+  text-align: center;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.orientation-gate__phone {
+  font-size: clamp(3.5rem, 18vw, 6rem);
+  line-height: 1;
+  animation: orientation-rotate 1800ms var(--ease) infinite;
+}
+
+.orientation-gate__title {
+  margin: 0;
+  font-size: clamp(1.6rem, 7vw, 2.4rem);
+  font-weight: 800;
+}
+
+.orientation-gate__subtitle {
+  margin: 0;
+  max-width: 22ch;
+  font-size: clamp(1rem, 4.5vw, 1.4rem);
+  color: var(--text-soft);
+}
+
+@keyframes orientation-rotate {
+  0%,
+  35% {
+    transform: rotate(0deg);
+  }
+  65%,
+  100% {
+    transform: rotate(-90deg);
+  }
+}

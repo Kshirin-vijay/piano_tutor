@@ -1,0 +1,74 @@
+:root {
+  /* Calm, low-glare palette */
+  --bg: #f4f1ea;
+  --surface: #ffffff;
+  --text: #3a3a40;
+  --text-soft: #6b6b72;
+
+  /* Per-note cue colors used for the glow behind the target white key */
+  --glow-c: #e23b3b; /* red (Level 1 cue) */
+  --glow-d: #2f7fd6; /* blue */
+  --glow-e: #1f7a43; /* darker green */
+  --glow-f: #c47a12; /* warm amber */
+  --glow-g: #7d54c7; /* soft violet */
+  --glow-a: #c23d79; /* calm rose */
+  --glow-b: #237d82; /* deep teal */
+
+  /* UI accents (dots, hold fill, buttons, praise) */
+  --key-d: #79b8e0; /* calm sky blue */
+  --key-e: #2f9e5a; /* darker green */
+  --key-e-deep: #1f7a43; /* deeper green */
+
+  --accent: #b9a3e3; /* gentle lavender for praise */
+  --accent-button: #79b8e0;
+  --accent-button-deep: #4f97c7;
+
+  /* Sizing */
+  --radius: 28px;
+  --gap: 20px;
+
+  /* Motion: slow and gentle only */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-slow: 600ms;
+  --motion-med: 300ms;
+
+  --font: "Trebuchet MS", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(244, 248, 250, 0.22) 0%,
+      rgba(244, 248, 250, 0.4) 48%,
+      rgba(244, 241, 234, 0.58) 100%
+    ),
+    url("/backgrounds/calm-blue-cloud-game-bg.png") center / cover fixed
+      no-repeat,
+    var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  /* Prevent text selection / long-press menus during play */
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

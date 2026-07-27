@@ -1,0 +1,34 @@
+.ear-listen-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font);
+  font-size: clamp(1rem, 2.6vw, 1.3rem);
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface);
+  border: 3px solid var(--accent-button);
+  border-radius: 999px;
+  padding: 12px 24px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(79, 151, 199, 0.18);
+  transition: transform var(--motion-med) var(--ease),
+    background var(--motion-med) var(--ease);
+}
+
+.ear-listen-button:hover {
+  background: #eef6fc;
+}
+
+.ear-listen-button:active {
+  transform: scale(0.97);
+}
+
+.ear-listen-button__icon {
+  font-size: 1.6em;
+  line-height: 1;
+}
+
+.ear-listen-button__label {
+  pointer-events: none;
+}

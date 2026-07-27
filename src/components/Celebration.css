@@ -1,0 +1,56 @@
+.celebration {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.celebration__card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: clamp(24px, 5vw, 44px) clamp(32px, 7vw, 64px);
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+  border: 3px solid var(--accent);
+  animation: pop-in var(--motion-slow) var(--ease) both;
+}
+
+.celebration.is-big .celebration__card {
+  border-color: var(--key-e-deep);
+}
+
+.celebration__star {
+  font-size: clamp(2.5rem, 9vw, 4.5rem);
+  line-height: 1;
+}
+
+.celebration__title {
+  margin: 12px 0 0;
+  font-size: clamp(1.5rem, 5vw, 2.4rem);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.celebration__subtitle {
+  margin: 6px 0 0;
+  font-size: clamp(1rem, 3.5vw, 1.4rem);
+  color: var(--text-soft);
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

@@ -1,0 +1,121 @@
+.stage {
+  position: relative;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(16px, 4vh, 36px) 16px clamp(20px, 5vh, 44px);
+  gap: 16px;
+}
+
+/* Content sits above the faint musical decorations. The celebration is a
+   full-screen centered overlay (its own fixed positioning + high z-index), so
+   it must be excluded here or this rule would drop it into normal flow. */
+.stage > *:not(.music-decor):not(.celebration):not(.stage__finger-photo) {
+  position: relative;
+  z-index: 1;
+}
+
+.stage__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.stage__finger-photo {
+  position: fixed;
+  top: clamp(12px, 3vh, 26px);
+  left: clamp(12px, 3vw, 26px);
+  z-index: 10;
+  width: clamp(180px, 24vw, 300px);
+  aspect-ratio: 1 / 1.05;
+  border: 2px solid rgba(68, 83, 117, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 8px 18px rgba(42, 53, 83, 0.1);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.stage__finger-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@media (max-width: 1024px) {
+  .stage__finger-photo {
+    top: 12px;
+    left: 12px;
+    width: clamp(120px, 18vw, 175px);
+  }
+}
+
+@media (max-width: 760px) {
+  .stage__finger-photo {
+    width: clamp(96px, 28vw, 132px);
+  }
+}
+
+@media (max-width: 420px) {
+  .stage__finger-photo {
+    width: clamp(82px, 24vw, 108px);
+  }
+}
+
+.stage__level {
+  font-size: clamp(1rem, 3vw, 1.3rem);
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.stage__level-title {
+  font-weight: 400;
+}
+
+/* Top strip holding the row of hold-progress bars. */
+.stage__top {
+  width: min(900px, 92vw);
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stage__main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  flex: 1 1 auto;
+  justify-content: center;
+  width: 100%;
+}
+
+.stage__finger-cue {
+  min-width: 154px;
+  min-height: 96px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  place-items: center;
+  padding: 10px 22px 14px;
+  border: 2px solid rgba(68, 83, 117, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--text);
+  box-shadow: 0 10px 24px rgba(42, 53, 83, 0.08);
+}
+
+.stage__finger-cue span {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.stage__finger-cue strong {
+  font-size: clamp(2.2rem, 9vw, 4rem);
+  line-height: 0.95;
+}

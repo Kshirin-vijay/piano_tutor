@@ -1,0 +1,24 @@
+.progress-dots {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+
+.progress-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ded8cc;
+  transition: background var(--motion-med) var(--ease),
+    transform var(--motion-med) var(--ease);
+}
+
+.progress-dot.is-done {
+  background: var(--key-e-deep);
+}
+
+.progress-dot.is-current {
+  background: var(--key-d);
+  transform: scale(1.25);
+}

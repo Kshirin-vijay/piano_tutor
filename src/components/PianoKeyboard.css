@@ -1,0 +1,77 @@
+.piano {
+  position: relative;
+  width: min(900px, 92vw);
+  height: min(46vh, 380px);
+  margin: 0 auto;
+  --black-key-width: 9%;
+  --black-key-half-width: 4.5%;
+}
+
+.piano__whites {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* Black keys sit on top, centered over the white-key boundaries. */
+.piano__blacks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.black-key {
+  position: absolute;
+  top: 0;
+  width: var(--black-key-width);
+  height: 62%;
+  padding: 0;
+  background: linear-gradient(180deg, #2a2a2e 0%, #050507 100%);
+  border: 0;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.4),
+    inset 0 -6px 8px rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font: inherit;
+  z-index: 2;
+}
+
+.black-key.is-active {
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.black-key.is-pressed {
+  transform: translateY(3px);
+  background: linear-gradient(180deg, #17171b 0%, #000000 100%);
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.4),
+    inset 0 -3px 6px rgba(255, 255, 255, 0.06);
+}
+
+.black-key__label {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  font-size: clamp(0.9rem, 2vw, 1.15rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Boundaries with black keys: C-D, D-E, F-G, G-A, A-B. */
+.black-key--1 {
+  left: calc(14.286% - var(--black-key-half-width));
+}
+.black-key--2 {
+  left: calc(28.571% - var(--black-key-half-width));
+}
+.black-key--3 {
+  left: calc(57.143% - var(--black-key-half-width));
+}
+.black-key--4 {
+  left: calc(71.429% - var(--black-key-half-width));
+}
+.black-key--5 {
+  left: calc(85.714% - var(--black-key-half-width));
+}

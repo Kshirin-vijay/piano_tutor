@@ -1,0 +1,15 @@
+.music-decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.decor {
+  position: absolute;
+  color: var(--text-soft);
+  opacity: 0.07;
+  line-height: 1;
+  user-select: none;
+}

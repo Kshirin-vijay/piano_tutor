@@ -1,0 +1,43 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#faf8f3"/>
+      <stop offset="1" stop-color="#f4f1ea"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#bg)"/>
+
+  <!-- Piano body -->
+  <g transform="translate(96 150)">
+    <rect x="0" y="0" width="320" height="212" rx="22" fill="#ffffff" stroke="#d9d4c8" stroke-width="6"/>
+
+    <!-- White keys -->
+    <g>
+      <rect x="14"  y="20" width="40" height="172" rx="8" fill="#ffffff" stroke="#cfc9bc" stroke-width="4"/>
+      <rect x="58"  y="20" width="40" height="172" rx="8" fill="#ffffff" stroke="#cfc9bc" stroke-width="4"/>
+      <rect x="102" y="20" width="40" height="172" rx="8" fill="#ffffff" stroke="#cfc9bc" stroke-width="4"/>
+      <rect x="146" y="20" width="40" height="172" rx="8" fill="#ffffff" stroke="#cfc9bc" stroke-width="4"/>
+      <rect x="190" y="20" width="40" height="172" rx="8" fill="#ffffff" stroke="#cfc9bc" stroke-width="4"/>
+      <rect x="234" y="20" width="40" height="172" rx="8" fill="#ffffff" stroke="#cfc9bc" stroke-width="4"/>
+    </g>
+
+    <!-- Colored cue glow on one key (matches in-app note cues) -->
+    <rect x="58" y="20" width="40" height="172" rx="8" fill="#79b8e0" opacity="0.55"/>
+
+    <!-- Black keys -->
+    <g fill="#3a3a40">
+      <rect x="40"  y="20" width="26" height="104" rx="6"/>
+      <rect x="86"  y="20" width="26" height="104" rx="6"/>
+      <rect x="174" y="20" width="26" height="104" rx="6"/>
+      <rect x="218" y="20" width="26" height="104" rx="6"/>
+    </g>
+  </g>
+
+  <!-- Music note -->
+  <g transform="translate(330 96)" fill="#7d54c7">
+    <rect x="44" y="6" width="12" height="92" rx="6"/>
+    <path d="M44 12 q40 -14 44 6 q-44 -2 -44 18 z"/>
+    <ellipse cx="34" cy="96" rx="24" ry="18"/>
+  </g>
+</svg>
