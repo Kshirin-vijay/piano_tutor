@@ -8,7 +8,7 @@ import {
   stopNote,
 } from "../audio/piano";
 import type { EarLevel } from "../ear/earLevels";
-import { emit } from "../config/events";
+import { LevelAttemptTracker } from "../logging/levelAttempt";
 import PianoKeyboard, { WHITE_KEYS } from "./PianoKeyboard";
 import Instruction from "./Instruction";
 import ProgressDots from "./ProgressDots";
@@ -49,34 +49,36 @@ export default function EarTrainingLevel({
   const [showGlow, setShowGlow] = useState(false);
   const [praiseTick, setPraiseTick] = useState(0);
   const [repeatPending, setRepeatPending] = useState(false);
+  const [attemptKey, setAttemptKey] = useState(0);
 
   const playDelayRef = useRef<number | null>(null);
   const hesitationRef = useRef<number | null>(null);
   const advanceRef = useRef<number | null>(null);
+  const trackerRef = useRef<LevelAttemptTracker | null>(null);
   // True once a wrong key is tapped this attempt, so the level will replay.
   const hadMistakeRef = useRef(false);
 
   const target = earLevel.rounds[roundIndex];
   const isLastRound = roundIndex >= earLevel.rounds.length - 1;
 
-  // Reset everything when the level changes.
+  // Reset everything when the level changes or a replay starts.
   useEffect(() => {
     setRoundIndex(0);
     setPhase("playing");
     setShowGlow(false);
     setRepeatPending(false);
     hadMistakeRef.current = false;
-  }, [earLevel]);
+  }, [earLevel, attemptKey]);
 
-  // Announce the ear-training level start for practice history.
   useEffect(() => {
-    emit({
-      type: "level.started",
+    trackerRef.current = new LevelAttemptTracker({
       levelNumber,
       title: earLevel.title,
       kind: "ear",
+      attemptNumber: attemptKey + 1,
+      totalTasks: earLevel.rounds.length,
     });
-  }, [earLevel, levelNumber]);
+  }, [earLevel, levelNumber, attemptKey]);
 
   // Build audio up front so the listen cue and key taps are ready.
   useEffect(() => {
@@ -123,19 +125,13 @@ export default function EarTrainingLevel({
       setPhase("levelComplete");
       advanceRef.current = window.setTimeout(() => {
         if (willRepeat) {
-          emit({ type: "level.replayed", levelNumber });
+          trackerRef.current?.finishAttempt("replayed");
           hadMistakeRef.current = false;
           setRepeatPending(false);
           setShowGlow(false);
-          setRoundIndex(0);
-          setPhase("playing");
+          setAttemptKey((k) => k + 1);
         } else {
-          emit({
-            type: "level.completed",
-            levelNumber,
-            kind: "ear",
-            clean: !hadMistakeRef.current,
-          });
+          trackerRef.current?.finishAttempt("passed");
           onLevelComplete();
         }
       }, LEVEL_DONE_MS);
@@ -155,13 +151,13 @@ export default function EarTrainingLevel({
       if (phase !== "playing") return;
 
       if (note === target) {
-        emit({ type: "task.succeeded", note: target, taskIndex: roundIndex });
+        trackerRef.current?.recordSuccess(target, roundIndex);
         succeed();
       } else {
         // Wrong key: no error, just reveal the glow as a gentle safety net.
         // It also marks the attempt, so the level will replay at the end.
         hadMistakeRef.current = true;
-        emit({ type: "task.mistake", expected: target, got: note });
+        trackerRef.current?.recordMistake(target, note, roundIndex);
         setShowGlow(true);
       }
     },

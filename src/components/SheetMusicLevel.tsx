@@ -7,6 +7,7 @@ import {
 } from "../audio/piano";
 import { useSpeak } from "../audio/useSpeak";
 import { getCountMs } from "../engine/useLevelEngine";
+import { LevelAttemptTracker } from "../logging/levelAttempt";
 import {
   getSheetNoteCounts,
   type SheetMusicLevel as SheetMusicLevelConfig,
@@ -388,6 +389,7 @@ export default function SheetMusicLevel({
   const holdIntervalRef = useRef<number | null>(null);
   const activeHoldRef = useRef<ActiveSheetHold | null>(null);
   const summaryCelebratedRef = useRef(false);
+  const trackerRef = useRef<LevelAttemptTracker | null>(null);
 
   const currentNote = level.sequence[noteIndex] ?? level.sequence[0];
   const currentCounts = getSheetNoteCounts(level, noteIndex);
@@ -513,6 +515,7 @@ export default function SheetMusicLevel({
       setResults((current) => [...current, result]);
 
       if (status === "correct") {
+        trackerRef.current?.recordSuccess(result.note, index);
         playSuccessChime();
       }
 
@@ -565,6 +568,13 @@ export default function SheetMusicLevel({
 
   const handleStartGame = useCallback(() => {
     const start = performance.now();
+    trackerRef.current = new LevelAttemptTracker({
+      levelNumber,
+      title: level.title,
+      kind: "sheet",
+      attemptNumber: 1,
+      totalTasks: level.sequence.length,
+    });
     setPhase("playing");
     setNoteIndex(0);
     setStartedAt(start);
@@ -580,7 +590,12 @@ export default function SheetMusicLevel({
     clearHoldTimer();
     resolvingRef.current = false;
     summaryCelebratedRef.current = false;
-  }, [clearHoldTimer]);
+  }, [clearHoldTimer, level, levelNumber]);
+
+  const handleContinue = useCallback(() => {
+    trackerRef.current?.finishAttempt("passed");
+    onLevelComplete();
+  }, [onLevelComplete]);
 
   const handleKeyDown = useCallback(
     (note: NoteName) => {
@@ -589,6 +604,10 @@ export default function SheetMusicLevel({
       if (phaseRef.current !== "playing" || resolvingRef.current) return;
 
       if (!noteReady) {
+        const expectedNote = level.sequence[noteIndexRef.current];
+        if (expectedNote) {
+          trackerRef.current?.recordMistake(expectedNote, note, noteIndexRef.current);
+        }
         showFeedback(note, "wrong");
         return;
       }
@@ -596,6 +615,7 @@ export default function SheetMusicLevel({
       const index = noteIndexRef.current;
       const expectedNote = level.sequence[index];
       if (note !== expectedNote) {
+        trackerRef.current?.recordMistake(expectedNote, note, index);
         showFeedback(note, "wrong");
         return;
       }
@@ -693,7 +713,7 @@ export default function SheetMusicLevel({
         ) : phase === "summary" ? (
           <SummaryPanel
             results={results}
-            onContinue={onLevelComplete}
+            onContinue={handleContinue}
           />
         ) : (
           <ScrollingStaff

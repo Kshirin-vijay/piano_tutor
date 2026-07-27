@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { LevelAttemptTracker } from "../logging/levelAttempt";
 import MusicDecor from "./MusicDecor";
 import ProgressDots from "./ProgressDots";
 import { asset } from "../assets";
@@ -26,6 +27,8 @@ const FINGERS: Finger[] = [
   { number: 4, ordinal: "4th", name: "Ring", className: "ring" },
   { number: 5, ordinal: "5th", name: "Pinky", className: "pinky" },
 ];
+
+const TOTAL_FINGER_QUIZ_TASKS = FINGERS.length * 2;
 
 const SIDE_LABELS: Record<HandSide, string> = {
   right: "RIGHT HAND",
@@ -111,6 +114,7 @@ export default function FingerNumbersLevel({
   const [quizOrder, setQuizOrder] = useState<number[]>([]);
   const [quizIndex, setQuizIndex] = useState(0);
   const [chosen, setChosen] = useState<number | null>(null);
+  const trackerRef = useRef<LevelAttemptTracker | null>(null);
 
   useEffect(() => {
     if (phase !== "intro") return;
@@ -121,6 +125,18 @@ export default function FingerNumbersLevel({
 
     return () => window.clearTimeout(timer);
   }, [phase]);
+
+  useEffect(() => {
+    if (phase !== "teach" || trackerRef.current) return;
+
+    trackerRef.current = new LevelAttemptTracker({
+      levelNumber,
+      title: "Finger numbers",
+      kind: "finger",
+      attemptNumber: 1,
+      totalTasks: TOTAL_FINGER_QUIZ_TASKS,
+    });
+  }, [phase, levelNumber]);
 
   const learnedFinger = fingerByNumber(learnedCount);
   const quizTarget = quizOrder[quizIndex] ?? learnedCount;
@@ -174,6 +190,11 @@ export default function FingerNumbersLevel({
       return;
     }
 
+    finishLevel();
+  }
+
+  function finishLevel() {
+    trackerRef.current?.finishAttempt("passed");
     onLevelComplete();
   }
 
@@ -182,8 +203,10 @@ export default function FingerNumbersLevel({
     setChosen(answer);
 
     if (answer === quizTarget) {
+      trackerRef.current?.recordSuccess(String(quizTarget), quizIndex);
       window.setTimeout(advanceAfterCorrect, 750);
     } else {
+      trackerRef.current?.recordMistake(String(quizTarget), String(answer), quizIndex);
       window.setTimeout(() => setChosen(null), 700);
     }
   }

@@ -19,6 +19,8 @@ export interface LevelStat {
   replays: number;
   successes: number;
   mistakes: number;
+  /** Sum of level.attempt_finished durationMs for this level. */
+  totalPracticeMs: number;
   /** epoch ms */
   firstPlayed: number;
   /** epoch ms */

@@ -7,15 +7,39 @@
  * with no changes to the components that emit.
  */
 
-export type StageKind = "level" | "song" | "ear";
+export type StageKind = "level" | "song" | "ear" | "sheet" | "finger";
+
+export type AttemptOutcome = "passed" | "replayed";
 
 export type AppEvent =
   | { type: "task.succeeded"; note?: string; taskIndex: number }
-  | { type: "task.mistake"; expected?: string; got: string }
+  | { type: "task.mistake"; expected?: string; got: string; taskIndex?: number }
   | { type: "hesitation"; ms: number }
   | { type: "level.replayed"; levelNumber: number }
-  | { type: "level.started"; levelNumber: number; title: string; kind: StageKind }
-  | { type: "level.completed"; levelNumber: number; kind: StageKind; clean: boolean };
+  | {
+      type: "level.started";
+      levelNumber: number;
+      title: string;
+      kind: StageKind;
+      attemptNumber: number;
+      totalTasks: number;
+    }
+  | { type: "level.completed"; levelNumber: number; kind: StageKind; clean: boolean }
+  | {
+      type: "level.attempt_finished";
+      levelNumber: number;
+      title: string;
+      kind: StageKind;
+      attemptNumber: number;
+      outcome: AttemptOutcome;
+      clean: boolean;
+      durationMs: number;
+      taskSuccesses: number;
+      taskMistakes: number;
+      totalTasks: number;
+      mistakesByExpected: Record<string, number>;
+      mistakesByWrongKey: Record<string, number>;
+    };
 
 export type EventType = AppEvent["type"];
 

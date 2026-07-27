@@ -7,7 +7,7 @@ import {
   stopNote,
 } from "../audio/piano";
 import { getConfig } from "../config/appConfig";
-import { emit } from "../config/events";
+import { LevelAttemptTracker } from "../logging/levelAttempt";
 
 /**
  * Length of one count (beat) in milliseconds, read live from config so a
@@ -76,6 +76,7 @@ export function useLevelEngine(
   const intervalRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const tapsRef = useRef(0);
+  const trackerRef = useRef<LevelAttemptTracker | null>(null);
 
   const clearHoldTimer = useCallback(() => {
     if (intervalRef.current !== null) {
@@ -103,16 +104,15 @@ export function useLevelEngine(
     }
   }, [level, attemptKey, clearHoldTimer]);
 
-  // Announce a level/song start once per entry (not on replays via attemptKey),
-  // so practice history can attribute later task events to this level.
   useEffect(() => {
-    emit({
-      type: "level.started",
+    trackerRef.current = new LevelAttemptTracker({
       levelNumber: level.number,
       title: level.title,
       kind: continuous ? "song" : "level",
+      attemptNumber: attemptKey + 1,
+      totalTasks: level.tasks.length,
     });
-  }, [level, continuous]);
+  }, [level, continuous, attemptKey]);
 
   // Cleanup timers on unmount.
   useEffect(() => {
@@ -126,11 +126,10 @@ export function useLevelEngine(
 
   const succeedTask = useCallback(() => {
     const current = level.tasks[taskIndex];
-    emit({
-      type: "task.succeeded",
-      note: current && current.type !== "rest" ? current.note : undefined,
-      taskIndex,
-    });
+    trackerRef.current?.recordSuccess(
+      current && current.type !== "rest" ? current.note : undefined,
+      taskIndex
+    );
     clearHoldTimer();
     holdRef.current = null;
     accumulatedRef.current = 0;
@@ -151,15 +150,10 @@ export function useLevelEngine(
       setPhase("levelComplete");
       timeoutRef.current = window.setTimeout(() => {
         if (willRepeat) {
-          emit({ type: "level.replayed", levelNumber: level.number });
+          trackerRef.current?.finishAttempt("replayed");
           setAttemptKey((k) => k + 1);
         } else {
-          emit({
-            type: "level.completed",
-            levelNumber: level.number,
-            kind: continuous ? "song" : "level",
-            clean: !hadMistakeRef.current,
-          });
+          trackerRef.current?.finishAttempt("passed");
           onLevelComplete();
         }
       }, LEVEL_DONE_MS);
@@ -217,7 +211,7 @@ export function useLevelEngine(
         note !== task.note
       ) {
         hadMistakeRef.current = true;
-        emit({ type: "task.mistake", expected: task.note, got: note });
+        trackerRef.current?.recordMistake(task.note, note, taskIndex);
       }
 
       if (task.type === "hold" && note === task.note) {

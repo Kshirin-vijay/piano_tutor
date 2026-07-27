@@ -96,6 +96,7 @@ function ensureLevel(
       replays: 0,
       successes: 0,
       mistakes: 0,
+      totalPracticeMs: 0,
       firstPlayed: now,
       lastPlayed: now,
     };
@@ -103,6 +104,7 @@ function ensureLevel(
   }
   if (title) stat.title = title;
   if (kind) stat.kind = kind;
+  if (stat.totalPracticeMs === undefined) stat.totalPracticeMs = 0;
   return stat;
 }
 
@@ -185,6 +187,17 @@ export function recordEvent(event: AppEvent): void {
     case "level.replayed": {
       const stat = ensureLevel(event.levelNumber, now);
       stat.replays += 1;
+      stat.lastPlayed = now;
+      break;
+    }
+    case "level.attempt_finished": {
+      const stat = ensureLevel(
+        event.levelNumber,
+        now,
+        event.title,
+        event.kind
+      );
+      stat.totalPracticeMs += event.durationMs;
       stat.lastPlayed = now;
       break;
     }
