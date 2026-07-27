@@ -10,4 +10,6 @@ dev-dist
 # Build artifacts and local tooling
 tsconfig.tsbuildinfo
 tmp_samples/
+logs/
 .cursor/
+.vercel

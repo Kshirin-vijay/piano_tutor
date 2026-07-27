@@ -7,6 +7,12 @@ import type { Song } from "./songs/songs";
 import { EAR_LEVELS } from "./ear/earLevels";
 import type { EarLevel } from "./ear/earLevels";
 import { SHEET_MUSIC_LEVELS } from "./sheet/sheetMusicLevels";
+import { getSession } from "./auth/session";
+import { hasActiveStudent } from "./auth/students";
+import LoginScreen from "./components/LoginScreen";
+import StudentSelectScreen from "./components/StudentSelectScreen";
+import { logEvent } from "./logging/remoteLog";
+import { getUserId } from "./progress/identity";
 import StartScreen from "./components/StartScreen";
 import SongSelect from "./components/SongSelect";
 import LevelStage from "./components/LevelStage";
@@ -112,8 +118,11 @@ const DEV_STAGE_OPTIONS = [
 ];
 
 export default function App() {
-  const { highestLevel, completeLevel, resetProgress } = useAppState();
+  const { highestLevel, completeLevel, resetProgress, reloadForLearner } =
+    useAppState();
 
+  const [authed, setAuthed] = useState(() => getSession() !== null);
+  const [studentReady, setStudentReady] = useState(() => hasActiveStudent());
   const [mode, setMode] = useState<Mode>("start");
   const [levelIndex, setLevelIndex] = useState(0);
   const [song, setSong] = useState<Song | null>(null);
@@ -139,6 +148,7 @@ export default function App() {
   }
 
   function handlePlay() {
+    logEvent("practice.session_started");
     if (allLevelsDone) {
       setLevelIndex(LEVEL_18_SONG_STAGE_INDEX);
       setSongReturnIndex(null);
@@ -149,9 +159,38 @@ export default function App() {
   }
 
   function handleFreePlay() {
+    logEvent("free_play.started");
     setSong(null);
     setSongReturnIndex(null);
     setMode("freePlay");
+  }
+
+  function handleLoggedOut() {
+    setMode("start");
+    setSong(null);
+    setSongReturnIndex(null);
+    setSongStageCleared(false);
+    setStudentReady(false);
+    setAuthed(false);
+  }
+
+  function handleStudentSelected() {
+    setStudentReady(true);
+    reloadForLearner();
+    setMode("start");
+    setLevelIndex(0);
+    setSong(null);
+    setSongReturnIndex(null);
+    setSongStageCleared(false);
+  }
+
+  function handleStudentChanged() {
+    reloadForLearner();
+    setMode("start");
+    setLevelIndex(0);
+    setSong(null);
+    setSongReturnIndex(null);
+    setSongStageCleared(false);
   }
 
   function handleStartOver() {
@@ -248,32 +287,44 @@ export default function App() {
     </aside>
   );
 
+  if (!authed) {
+    return <LoginScreen onLoggedIn={() => setAuthed(true)} />;
+  }
+
+  if (!studentReady) {
+    return <StudentSelectScreen onSelected={handleStudentSelected} />;
+  }
+
+  const learnerKey = getUserId();
+
   if (mode === "start") {
     return (
-      <>
+      <div key={learnerKey}>
         {devStagePicker}
         <StartScreen
           onPlay={handlePlay}
           onFreePlay={handleFreePlay}
           hasProgress={highestLevel > 0}
           onStartOver={handleStartOver}
+          onLoggedOut={handleLoggedOut}
+          onStudentChanged={handleStudentChanged}
         />
-      </>
+      </div>
     );
   }
 
   if (mode === "freePlay") {
     return (
-      <>
+      <div key={learnerKey}>
         {devStagePicker}
         <FreePlayScreen onBack={() => setMode("start")} />
-      </>
+      </div>
     );
   }
 
   if (mode === "songSelect") {
     return (
-      <>
+      <div key={learnerKey}>
         {devStagePicker}
         <SongSelect
           levelNumber={songReturnIndex !== null ? levelIndex + 1 : undefined}
@@ -299,7 +350,7 @@ export default function App() {
               : undefined
           }
         />
-      </>
+      </div>
     );
   }
 
@@ -311,7 +362,7 @@ export default function App() {
       tasks: song.tasks,
     };
     return (
-      <>
+      <div key={learnerKey}>
         {devStagePicker}
         <LevelStage
           key={`song-${song.id}`}
@@ -324,7 +375,7 @@ export default function App() {
           continuous
           onLevelComplete={handleSongComplete}
         />
-      </>
+      </div>
     );
   }
 
@@ -332,7 +383,7 @@ export default function App() {
   const sheetMusicLevel = sheetMusicLevelForStage(levelIndex);
 
   return (
-    <>
+    <div key={learnerKey}>
       {devStagePicker}
       {levelIndex === FINGER_NUMBERS_STAGE_INDEX ? (
         <FingerNumbersLevel
@@ -361,6 +412,6 @@ export default function App() {
           onLevelComplete={handleLevelComplete}
         />
       )}
-    </>
+    </div>
   );
 }

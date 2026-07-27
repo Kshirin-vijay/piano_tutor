@@ -26,6 +26,14 @@
   color: var(--text-soft);
 }
 
+.settings-account {
+  margin: 0;
+  font-size: clamp(0.9rem, 2.4vw, 1rem);
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-word;
+}
+
 .settings-row {
   display: flex;
   align-items: center;

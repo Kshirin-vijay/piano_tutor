@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
+import { getUserId } from "../progress/identity";
 
-const LEVEL_KEY = "pianoFriend.highestLevel";
+const LEVEL_KEY_PREFIX = "pianoFriend.highestLevel.";
+
+function levelKey(): string {
+  return LEVEL_KEY_PREFIX + getUserId();
+}
 
 function readLevel(): number {
   try {
-    const v = Number(localStorage.getItem(LEVEL_KEY));
+    const v = Number(localStorage.getItem(levelKey()));
     return Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
   } catch {
     return 0;
@@ -16,11 +21,16 @@ export function useAppState() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(LEVEL_KEY, String(highestLevel));
+      localStorage.setItem(levelKey(), String(highestLevel));
     } catch {
       /* storage unavailable; keep in-memory only */
     }
   }, [highestLevel]);
+
+  /** Call after switching students so level progress reloads. */
+  const reloadForLearner = useCallback(() => {
+    setHighestLevel(readLevel());
+  }, []);
 
   /** Record that a level was completed, unlocking the next one. */
   const completeLevel = useCallback((levelIndex: number) => {
@@ -31,11 +41,11 @@ export function useAppState() {
   const resetProgress = useCallback(() => {
     setHighestLevel(0);
     try {
-      localStorage.removeItem(LEVEL_KEY);
+      localStorage.removeItem(levelKey());
     } catch {
       /* ignore */
     }
   }, []);
 
-  return { highestLevel, completeLevel, resetProgress };
+  return { highestLevel, completeLevel, resetProgress, reloadForLearner };
 }

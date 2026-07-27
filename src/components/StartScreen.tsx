@@ -13,6 +13,10 @@ interface StartScreenProps {
   /** Show a "Start over" option only when there is saved progress. */
   hasProgress: boolean;
   onStartOver: () => void;
+  /** Called after the caregiver logs out from Settings. */
+  onLoggedOut: () => void;
+  /** Called after switching the active student in Settings. */
+  onStudentChanged: () => void;
 }
 
 export default function StartScreen({
@@ -20,6 +24,8 @@ export default function StartScreen({
   onFreePlay,
   hasProgress,
   onStartOver,
+  onLoggedOut,
+  onStudentChanged,
 }: StartScreenProps) {
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -46,7 +52,13 @@ export default function StartScreen({
   }
 
   if (showSettings) {
-    return <Settings onClose={() => setShowSettings(false)} />;
+    return (
+      <Settings
+        onClose={() => setShowSettings(false)}
+        onLoggedOut={onLoggedOut}
+        onStudentChanged={onStudentChanged}
+      />
+    );
   }
 
   return (

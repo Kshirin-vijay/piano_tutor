@@ -1,12 +1,31 @@
 /**
- * The single place that resolves "who is this practice for". Today there is one
- * local user, so this returns "local". When the server/native phase adds
- * accounts, this is the only function that changes (it returns the authenticated
- * user id), and all per-user storage keys follow automatically.
+ * The single place that resolves "who is this practice for". Returns
+ * `teacherId__studentId` when both are set so progress and logs stay per student.
  */
+
+import { getSession } from "../auth/session";
+import { getActiveStudent } from "../auth/students";
 
 const LOCAL_USER_ID = "local";
 
+/** Full learner id used for progress storage keys. */
 export function getUserId(): string {
+  const session = getSession();
+  const student = getActiveStudent();
+  if (session && student) {
+    return `${session.userId}__${student.id}`;
+  }
   return LOCAL_USER_ID;
+}
+
+export function getTeacherId(): string | null {
+  return getSession()?.userId ?? null;
+}
+
+export function getStudentId(): string | null {
+  return getActiveStudent()?.id ?? null;
+}
+
+export function getStudentLabel(): string | null {
+  return getActiveStudent()?.label ?? null;
 }
