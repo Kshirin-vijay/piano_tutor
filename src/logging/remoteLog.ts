@@ -1,8 +1,3 @@
-/**
- * Fire-and-forget remote usage logging via POST /api/log.
- * Server writes one JSONL line per event to a daily file per student.
- */
-
 import type { AppEvent } from "../config/events";
 import {
   getStudentId,
@@ -10,14 +5,16 @@ import {
   getTeacherId,
 } from "../progress/identity";
 
+const LOG_ENDPOINT = import.meta.env.VITE_LOG_ENDPOINT as string | undefined;
+
 function canLog(): boolean {
-  return Boolean(getTeacherId() && getStudentId());
+  return Boolean(LOG_ENDPOINT && getTeacherId() && getStudentId());
 }
 
 function postLog(payload: Record<string, unknown>): void {
   if (!canLog()) return;
 
-  void fetch("/api/log", {
+  void fetch(LOG_ENDPOINT!, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

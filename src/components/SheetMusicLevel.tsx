@@ -14,7 +14,6 @@ import {
   type SheetNoteCounts,
 } from "../sheet/sheetMusicLevels";
 import Celebration from "./Celebration";
-import MusicDecor from "./MusicDecor";
 import PianoKeyboard, { WHITE_KEYS } from "./PianoKeyboard";
 import ProgressDots from "./ProgressDots";
 import "./SheetMusicLevel.css";
@@ -681,8 +680,6 @@ export default function SheetMusicLevel({
 
   return (
     <div className="stage sheet-level">
-      <MusicDecor />
-
       <header className="stage__header">
         <div className="stage__level">
           Level {levelNumber}

@@ -1,6 +1,5 @@
 import { SONGS } from "../songs/songs";
 import type { Song } from "../songs/songs";
-import MusicDecor from "./MusicDecor";
 import "./Screen.css";
 import "./SongSelect.css";
 
@@ -23,7 +22,6 @@ export default function SongSelect({
 }: SongSelectProps) {
   return (
     <div className="screen">
-      <MusicDecor />
       <div className="card">
         {levelNumber ? (
           <div className="song-select__level">Level {levelNumber}</div>

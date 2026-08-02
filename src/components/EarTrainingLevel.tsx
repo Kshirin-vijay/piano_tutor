@@ -13,7 +13,6 @@ import PianoKeyboard, { WHITE_KEYS } from "./PianoKeyboard";
 import Instruction from "./Instruction";
 import ProgressDots from "./ProgressDots";
 import Celebration from "./Celebration";
-import MusicDecor from "./MusicDecor";
 import "./LevelStage.css";
 import "./EarTrainingLevel.css";
 
@@ -177,8 +176,6 @@ export default function EarTrainingLevel({
 
   return (
     <div className="stage">
-      <MusicDecor />
-
       <header className="stage__header">
         <div className="stage__level">
           Level {levelNumber}

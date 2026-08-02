@@ -7,12 +7,9 @@ import type { Song } from "./songs/songs";
 import { EAR_LEVELS } from "./ear/earLevels";
 import type { EarLevel } from "./ear/earLevels";
 import { SHEET_MUSIC_LEVELS } from "./sheet/sheetMusicLevels";
-import { getSession } from "./auth/session";
-import { hasActiveStudent } from "./auth/students";
-import LoginScreen from "./components/LoginScreen";
-import StudentSelectScreen from "./components/StudentSelectScreen";
 import { logEvent } from "./logging/remoteLog";
-import { getUserId } from "./progress/identity";
+import { getUserId, isAuthenticated, setIdentity, clearIdentity } from "./progress/identity";
+import { hydrateProgress } from "./progress/progressStore";
 import StartScreen from "./components/StartScreen";
 import SongSelect from "./components/SongSelect";
 import LevelStage from "./components/LevelStage";
@@ -20,9 +17,12 @@ import FingerNumbersLevel from "./components/FingerNumbersLevel";
 import EarTrainingLevel from "./components/EarTrainingLevel";
 import SheetMusicLevel from "./components/SheetMusicLevel";
 import FreePlayScreen from "./components/FreePlayScreen";
+import AccessCodeScreen from "./components/AccessCodeScreen";
+import StudentPickerScreen from "./components/StudentPickerScreen";
+import type { ClassRoster } from "./components/AccessCodeScreen";
 import "./components/Screen.css";
 
-type Mode = "start" | "level" | "songSelect" | "song" | "freePlay";
+type Mode = "start" | "level" | "songSelect" | "song" | "freePlay" | "accessCode" | "studentPicker";
 
 const SONG_STAGE_INDEX = 8;
 const LEVEL_18_SONG_STAGE_INDEX = LEVELS.length + 1;
@@ -118,17 +118,16 @@ const DEV_STAGE_OPTIONS = [
 ];
 
 export default function App() {
-  const { highestLevel, completeLevel, resetProgress, reloadForLearner } =
-    useAppState();
+  const { highestLevel, completeLevel, resetProgress, reloadForLearner } = useAppState();
 
-  const [authed, setAuthed] = useState(() => getSession() !== null);
-  const [studentReady, setStudentReady] = useState(() => hasActiveStudent());
   const [mode, setMode] = useState<Mode>("start");
   const [levelIndex, setLevelIndex] = useState(0);
   const [song, setSong] = useState<Song | null>(null);
   const [songReturnIndex, setSongReturnIndex] = useState<number | null>(null);
   const [songStageCleared, setSongStageCleared] = useState(false);
   const [showDevStages, setShowDevStages] = useState(false);
+  const [authPending, setAuthPending] = useState<"play" | "settings" | null>(null);
+  const [roster, setRoster] = useState<ClassRoster | null>(null);
 
   const lastIndex = TOTAL_STAGES - 1;
   const allLevelsDone = highestLevel >= TOTAL_STAGES;
@@ -147,7 +146,7 @@ export default function App() {
     setMode("level");
   }
 
-  function handlePlay() {
+  function proceedToPlay() {
     logEvent("practice.session_started");
     if (allLevelsDone) {
       setLevelIndex(LEVEL_18_SONG_STAGE_INDEX);
@@ -158,6 +157,15 @@ export default function App() {
     }
   }
 
+  function handlePlay() {
+    if (isAuthenticated()) {
+      proceedToPlay();
+    } else {
+      setAuthPending("play");
+      setMode("accessCode");
+    }
+  }
+
   function handleFreePlay() {
     logEvent("free_play.started");
     setSong(null);
@@ -165,32 +173,57 @@ export default function App() {
     setMode("freePlay");
   }
 
-  function handleLoggedOut() {
-    setMode("start");
-    setSong(null);
-    setSongReturnIndex(null);
-    setSongStageCleared(false);
-    setStudentReady(false);
-    setAuthed(false);
+  function handleSettings() {
+    if (isAuthenticated()) {
+      setMode("start");
+      // StartScreen will handle showing settings internally
+    } else {
+      setAuthPending("settings");
+      setMode("accessCode");
+    }
   }
 
-  function handleStudentSelected() {
-    setStudentReady(true);
-    reloadForLearner();
-    setMode("start");
-    setLevelIndex(0);
-    setSong(null);
-    setSongReturnIndex(null);
-    setSongStageCleared(false);
+  function handleRosterLoaded(loadedRoster: ClassRoster) {
+    setRoster(loadedRoster);
+    setMode("studentPicker");
   }
 
-  function handleStudentChanged() {
+  function handleStudentPicked(student: { id: string; label: string }) {
+    if (!roster) return;
+    setIdentity(roster.code, student.id, student.label, roster.teacher);
     reloadForLearner();
+    void hydrateProgress();
+
+    const pending = authPending;
+    setAuthPending(null);
+    setRoster(null);
+
+    if (pending === "play") {
+      proceedToPlay();
+    } else {
+      setMode("start");
+    }
+  }
+
+  function handleAuthCancel() {
+    setAuthPending(null);
+    setRoster(null);
     setMode("start");
-    setLevelIndex(0);
-    setSong(null);
-    setSongReturnIndex(null);
-    setSongStageCleared(false);
+  }
+
+  function handleSwitchStudent() {
+    setAuthPending("settings");
+    setRoster(null);
+    setMode("accessCode");
+  }
+
+  function handleChangeClass() {
+    clearIdentity();
+    reloadForLearner();
+    void hydrateProgress();
+    setAuthPending(null);
+    setRoster(null);
+    setMode("start");
   }
 
   function handleStartOver() {
@@ -287,15 +320,30 @@ export default function App() {
     </aside>
   );
 
-  if (!authed) {
-    return <LoginScreen onLoggedIn={() => setAuthed(true)} />;
-  }
-
-  if (!studentReady) {
-    return <StudentSelectScreen onSelected={handleStudentSelected} />;
-  }
-
   const learnerKey = getUserId();
+
+  if (mode === "accessCode") {
+    return (
+      <div key={learnerKey}>
+        <AccessCodeScreen
+          onRosterLoaded={handleRosterLoaded}
+          onCancel={handleAuthCancel}
+        />
+      </div>
+    );
+  }
+
+  if (mode === "studentPicker" && roster) {
+    return (
+      <div key={learnerKey}>
+        <StudentPickerScreen
+          roster={roster}
+          onPick={handleStudentPicked}
+          onCancel={handleAuthCancel}
+        />
+      </div>
+    );
+  }
 
   if (mode === "start") {
     return (
@@ -304,10 +352,11 @@ export default function App() {
         <StartScreen
           onPlay={handlePlay}
           onFreePlay={handleFreePlay}
+          onSettings={handleSettings}
           hasProgress={highestLevel > 0}
           onStartOver={handleStartOver}
-          onLoggedOut={handleLoggedOut}
-          onStudentChanged={handleStudentChanged}
+          onSwitchStudent={handleSwitchStudent}
+          onChangeClass={handleChangeClass}
         />
       </div>
     );

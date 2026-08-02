@@ -1,6 +1,5 @@
 import { useProgress } from "../progress/useProgress";
 import { clearProgress } from "../progress/progressStore";
-import MusicDecor from "./MusicDecor";
 import "./Screen.css";
 import "./ProgressDashboard.css";
 
@@ -54,7 +53,6 @@ export default function ProgressDashboard({ onClose }: ProgressDashboardProps) {
 
   return (
     <div className="screen">
-      <MusicDecor />
       <div className="card progress-card">
         <h1 className="card__title">Practice progress</h1>
         <p className="card__subtitle">For grown-ups</p>

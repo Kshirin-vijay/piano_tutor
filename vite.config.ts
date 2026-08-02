@@ -1,147 +1,75 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
-import { findBetaUser, normalizeEmail } from "./api/betaUsers";
-import { appendUsageLog } from "./api/usageLog";
 
-// Serve from the site root by default (e.g. Vercel), or from a sub-path on an
-// existing site (e.g. AWS S3 at "/piano/") by building with:
-//   VITE_BASE=/piano/ npm run build
 const base = process.env.VITE_BASE ?? "/";
 
-/**
- * Local-dev stand-in for Vercel's /api/login so `npm run dev` can check the
- * allowlist without putting emails in the client bundle.
- */
-function betaLoginDevApi(): Plugin {
-  return {
-    name: "beta-login-dev-api",
-    configureServer(server) {
-      server.middlewares.use("/api/login", (req, res, next) => {
-        if (req.method !== "POST") {
-          res.statusCode = 405;
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: "Method not allowed." }));
-          return;
-        }
+const MOCK_CLASSES: Record<string, { teacher: string; active: boolean; students: { id: string; label: string }[] }> = {
+  "DEV-CLASS": { teacher: "Dev Teacher", active: true, students: [{ id: "tester-a1b2", label: "Tester" }] },
+};
+let mockIdCounter = 0;
+let mockPlayCounter = 42;
 
-        const chunks: Buffer[] = [];
-        req.on("data", (chunk: Buffer) => chunks.push(chunk));
-        req.on("end", () => {
-          let email = "";
-          try {
-            const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as {
-              email?: unknown;
-            };
-            if (typeof body.email === "string") email = body.email.trim();
-          } catch {
-            res.statusCode = 400;
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ error: "Please enter your email." }));
-            return;
-          }
-
-          if (!email) {
-            res.statusCode = 400;
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ error: "Please enter your email." }));
-            return;
-          }
-
-          const user = findBetaUser(email);
-          res.setHeader("Content-Type", "application/json");
-          if (!user) {
-            res.statusCode = 403;
-            res.end(
-              JSON.stringify({
-                error: "This email is not on the beta list. Ask for an invite.",
-              })
-            );
-            return;
-          }
-
-          res.statusCode = 200;
-          res.end(
-            JSON.stringify({
-              email: normalizeEmail(user.email),
-              userId: user.userId,
-            })
-          );
-        });
-        req.on("error", () => next());
-      });
-    },
-  };
+function readBody(req: import("http").IncomingMessage): Promise<string> {
+  return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (c: Buffer) => chunks.push(c));
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+  });
 }
 
-/** Local-dev stand-in for Vercel's /api/log — writes to logs/ on disk. */
-function usageLogDevApi(): Plugin {
+function devApiSink(): Plugin {
   return {
-    name: "usage-log-dev-api",
+    name: "dev-api-sink",
     configureServer(server) {
-      server.middlewares.use("/api/log", async (req, res, next) => {
+      server.middlewares.use("/api/counter", (req, res) => {
+        if (req.method === "POST") mockPlayCounter++;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ totalPlays: mockPlayCounter }));
+      });
+
+      server.middlewares.use("/api/auth/student", async (req, res) => {
+        if (req.method !== "POST") { res.statusCode = 405; res.end("{}"); return; }
+        const body = JSON.parse(await readBody(req));
+        const code = (body.code ?? "").toUpperCase();
+        const cls = MOCK_CLASSES[code];
+        if (!cls || !cls.active) { res.statusCode = 403; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Invalid class code" })); return; }
+        const name = (body.name ?? "").trim();
+        const id = `${name.toLowerCase()}-${(++mockIdCounter).toString(16).padStart(4, "0")}`;
+        const added = { id, label: name };
+        cls.students.push(added);
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ code, teacher: cls.teacher, students: cls.students, added }));
+      });
+
+      server.middlewares.use("/api/auth", async (req, res) => {
+        if (req.method !== "POST") { res.statusCode = 405; res.end("{}"); return; }
+        const body = JSON.parse(await readBody(req));
+        const code = (body.code ?? "").toUpperCase();
+        const cls = MOCK_CLASSES[code];
+        if (!cls || !cls.active) { res.statusCode = 403; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Invalid class code" })); return; }
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ code, teacher: cls.teacher, students: cls.students }));
+      });
+
+      server.middlewares.use("/api/log", (req, res) => {
         if (req.method !== "POST") {
           res.statusCode = 405;
-          res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ error: "Method not allowed." }));
           return;
         }
-
         const chunks: Buffer[] = [];
         req.on("data", (chunk: Buffer) => chunks.push(chunk));
         req.on("end", () => {
-          void (async () => {
-            try {
-              const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as {
-                teacherId?: unknown;
-                studentId?: unknown;
-                event?: unknown;
-                studentLabel?: unknown;
-                [key: string]: unknown;
-              };
-
-              const teacherId =
-                typeof body.teacherId === "string" ? body.teacherId.trim() : "";
-              const studentId =
-                typeof body.studentId === "string" ? body.studentId.trim() : "";
-              const event =
-                typeof body.event === "string" ? body.event.trim() : "";
-
-              if (!teacherId || !studentId || !event) {
-                res.statusCode = 400;
-                res.setHeader("Content-Type", "application/json");
-                res.end(
-                  JSON.stringify({
-                    error: "Missing teacherId, studentId, or event.",
-                  })
-                );
-                return;
-              }
-
-              const { teacherId: _t, studentId: _s, event: _e, ...rest } = body;
-              await appendUsageLog({
-                ts: new Date().toISOString(),
-                teacherId,
-                studentId,
-                studentLabel:
-                  typeof body.studentLabel === "string"
-                    ? body.studentLabel
-                    : undefined,
-                event,
-                ...rest,
-              });
-
-              res.statusCode = 200;
-              res.setHeader("Content-Type", "application/json");
-              res.end(JSON.stringify({ ok: true }));
-            } catch {
-              res.statusCode = 500;
-              res.setHeader("Content-Type", "application/json");
-              res.end(JSON.stringify({ error: "Failed to write log." }));
-            }
-          })();
+          try {
+            const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+            console.log("[dev-log]", body.event, body);
+          } catch {
+            /* ignore malformed body */
+          }
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ ok: true }));
         });
-        req.on("error", () => next());
       });
     },
   };
@@ -151,8 +79,7 @@ export default defineConfig({
   base,
   plugins: [
     react(),
-    betaLoginDevApi(),
-    usageLogDevApi(),
+    devApiSink(),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["icons/apple-touch-icon.png"],
@@ -186,8 +113,6 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Precache the app shell plus the bundled piano samples and images,
-        // so the app loads and plays fully offline after the first visit.
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2,mp3,wav,ogg}"],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },

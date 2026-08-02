@@ -11,7 +11,6 @@ import ProgressDots from "./ProgressDots";
 import HoldTrack from "./HoldTrack";
 import type { HoldBarItem } from "./HoldTrack";
 import Celebration from "./Celebration";
-import MusicDecor from "./MusicDecor";
 import { asset } from "../assets";
 import "./LevelStage.css";
 
@@ -124,8 +123,6 @@ export default function LevelStage({
 
   return (
     <div className="stage">
-      <MusicDecor />
-
       {fingerNumber ? (
         <div className="stage__finger-photo">
           <img
