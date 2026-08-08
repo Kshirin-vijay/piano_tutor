@@ -1,14 +1,66 @@
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
-
-const base = process.env.VITE_BASE ?? "/";
+import { readFileSync } from "node:fs";
+import { aggregateTeacherReport } from "./backend/lib/aggregate.mjs";
 
 const MOCK_CLASSES: Record<string, { teacher: string; active: boolean; students: { id: string; label: string }[] }> = {
   "DEV-CLASS": { teacher: "Dev Teacher", active: true, students: [{ id: "tester-a1b2", label: "Tester" }] },
 };
 let mockIdCounter = 0;
 let mockPlayCounter = 42;
+
+function buildLocalDashboardReport(from: string, to: string, timezone: string) {
+  try {
+    const events = JSON.parse(
+      readFileSync(new URL("./piano_logs.json", import.meta.url), "utf8")
+    ) as Array<Record<string, unknown>>;
+    const teacherIds = [
+      ...new Set(
+        events
+          .map((event) => String(event.teacherId ?? "public"))
+          .filter(
+            (teacherId) =>
+              teacherId === "public" ||
+              events.some(
+                (event) =>
+                  event.teacherId === teacherId &&
+                  String(event.studentId ?? "").startsWith(`${teacherId}__`)
+              )
+          )
+      ),
+    ].sort();
+    const rosterByTeacher = new Map();
+    for (const teacherId of teacherIds) {
+      const students = new Map<string, string>();
+      for (const event of events) {
+        if (event.teacherId !== teacherId || teacherId === "public") continue;
+        const fullId = String(event.studentId ?? "");
+        if (!fullId.startsWith(`${teacherId}__`)) continue;
+        const id = fullId.slice(teacherId.length + 2);
+        students.set(id, String(event.studentLabel ?? id));
+      }
+      rosterByTeacher.set(teacherId, {
+        teacherId,
+        teacherName: teacherId === "public" ? "Public practice" : teacherId,
+        students: [...students].map(([id, label]) => ({ id, label })),
+      });
+    }
+    return {
+      generatedAt: new Date().toISOString(),
+      ...aggregateTeacherReport({
+        events,
+        rosterByTeacher,
+        teacherIds,
+        from,
+        to,
+        timezone,
+      }),
+    };
+  } catch {
+    return null;
+  }
+}
 
 function readBody(req: import("http").IncomingMessage): Promise<string> {
   return new Promise((resolve) => {
@@ -18,10 +70,37 @@ function readBody(req: import("http").IncomingMessage): Promise<string> {
   });
 }
 
-function devApiSink(): Plugin {
+function devApiSink(dashboardPassword: string): Plugin {
   return {
     name: "dev-api-sink",
     configureServer(server) {
+      server.middlewares.use("/api/dashboard/auth", async (req, res) => {
+        if (req.method !== "POST") { res.statusCode = 405; res.end("{}"); return; }
+        const body = JSON.parse(await readBody(req));
+        res.setHeader("Content-Type", "application/json");
+        if (!dashboardPassword || body.password !== dashboardPassword) {
+          res.statusCode = 401;
+          res.end(JSON.stringify({ error: "Invalid credentials." }));
+          return;
+        }
+        res.end(JSON.stringify({ token: "dev-dashboard-token", expiresInSeconds: 28800 }));
+      });
+
+      server.middlewares.use("/api/dashboard/report", (req, res) => {
+        const url = new URL(req.url ?? "", "http://localhost");
+        const to = url.searchParams.get("to") ?? new Date().toISOString().slice(0, 10);
+        const from = url.searchParams.get("from") ?? to;
+        const timezone = url.searchParams.get("timezone") ?? "America/Los_Angeles";
+        const report = buildLocalDashboardReport(from, to, timezone);
+        res.setHeader("Content-Type", "application/json");
+        if (!report) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: "Could not read piano_logs.json" }));
+          return;
+        }
+        res.end(JSON.stringify(report));
+      });
+
       server.middlewares.use("/api/counter", (req, res) => {
         if (req.method === "POST") mockPlayCounter++;
         res.setHeader("Content-Type", "application/json");
@@ -75,11 +154,14 @@ function devApiSink(): Plugin {
   };
 }
 
-export default defineConfig({
-  base,
-  plugins: [
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  const base = process.env.VITE_BASE ?? env.VITE_BASE ?? "/";
+  return {
+    base,
+    plugins: [
     react(),
-    devApiSink(),
+    devApiSink(env.DASHBOARD_DEV_PASSWORD ?? ""),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["icons/apple-touch-icon.png"],
@@ -117,5 +199,6 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),
-  ],
+    ],
+  };
 });

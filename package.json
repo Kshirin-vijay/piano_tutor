@@ -6,6 +6,7 @@
   "description": "A calm, predictable piano-learning web app for autistic children.",
   "scripts": {
     "dev": "vite",
+    "dashboard:sync": "bash scripts/sync-piano-logs.sh",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },

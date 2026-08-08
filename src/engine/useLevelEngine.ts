@@ -50,6 +50,8 @@ export interface EngineView {
 interface EngineOptions {
   /** Songs play straight through: no per-note chime or praise, only a final celebration. */
   continuous?: boolean;
+  songId?: string;
+  stageIndex?: number;
 }
 
 export function useLevelEngine(
@@ -57,7 +59,7 @@ export function useLevelEngine(
   onLevelComplete: () => void,
   options: EngineOptions = {}
 ): EngineView {
-  const { continuous = false } = options;
+  const { continuous = false, songId, stageIndex } = options;
   const [taskIndex, setTaskIndex] = useState(0);
   const [tapsDone, setTapsDone] = useState(0);
   const [heldMs, setHeldMs] = useState(0);
@@ -105,14 +107,18 @@ export function useLevelEngine(
   }, [level, attemptKey, clearHoldTimer]);
 
   useEffect(() => {
-    trackerRef.current = new LevelAttemptTracker({
+    const tracker = new LevelAttemptTracker({
       levelNumber: level.number,
       title: level.title,
       kind: continuous ? "song" : "level",
       attemptNumber: attemptKey + 1,
       totalTasks: level.tasks.length,
+      songId,
+      stageIndex,
     });
-  }, [level, continuous, attemptKey]);
+    trackerRef.current = tracker;
+    return () => tracker.abandon("unmount");
+  }, [level, continuous, attemptKey, songId, stageIndex]);
 
   // Cleanup timers on unmount.
   useEffect(() => {

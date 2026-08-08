@@ -561,6 +561,7 @@ export default function SheetMusicLevel({
       }
       clearHoldTimer();
       activeHoldRef.current = null;
+      trackerRef.current?.abandon("unmount");
       WHITE_KEYS.forEach(stopNote);
     };
   }, [clearHoldTimer]);

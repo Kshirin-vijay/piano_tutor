@@ -137,6 +137,10 @@ export default function FingerNumbersLevel({
     });
   }, [phase, levelNumber]);
 
+  useEffect(() => {
+    return () => trackerRef.current?.abandon("unmount");
+  }, []);
+
   const learnedFinger = fingerByNumber(learnedCount);
   const quizTarget = quizOrder[quizIndex] ?? learnedCount;
   const completedUnits =

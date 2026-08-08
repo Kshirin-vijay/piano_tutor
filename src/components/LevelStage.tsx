@@ -24,6 +24,8 @@ interface LevelStageProps {
   headerText?: string;
   /** Songs play straight through with no per-note praise. */
   continuous?: boolean;
+  songId?: string;
+  stageIndex?: number;
 }
 
 function buildInstruction(task: Task | undefined): string {
@@ -52,8 +54,14 @@ export default function LevelStage({
   onLevelComplete,
   headerText,
   continuous,
+  songId,
+  stageIndex,
 }: LevelStageProps) {
-  const engine = useLevelEngine(level, onLevelComplete, { continuous });
+  const engine = useLevelEngine(level, onLevelComplete, {
+    continuous,
+    songId,
+    stageIndex,
+  });
 
   const instruction =
     engine.phase === "playing" ? buildInstruction(engine.task) : "";

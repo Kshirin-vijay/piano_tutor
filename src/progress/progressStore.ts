@@ -201,6 +201,17 @@ export function recordEvent(event: AppEvent): void {
       stat.lastPlayed = now;
       break;
     }
+    case "level.abandoned": {
+      const stat = ensureLevel(
+        event.levelNumber,
+        now,
+        event.title,
+        event.kind
+      );
+      stat.totalPracticeMs += event.durationMs;
+      stat.lastPlayed = now;
+      break;
+    }
     case "task.succeeded": {
       snapshot.totals.successes += 1;
       session.successes += 1;

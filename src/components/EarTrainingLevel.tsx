@@ -70,13 +70,15 @@ export default function EarTrainingLevel({
   }, [earLevel, attemptKey]);
 
   useEffect(() => {
-    trackerRef.current = new LevelAttemptTracker({
+    const tracker = new LevelAttemptTracker({
       levelNumber,
       title: earLevel.title,
       kind: "ear",
       attemptNumber: attemptKey + 1,
       totalTasks: earLevel.rounds.length,
     });
+    trackerRef.current = tracker;
+    return () => tracker.abandon("unmount");
   }, [earLevel, levelNumber, attemptKey]);
 
   // Build audio up front so the listen cue and key taps are ready.

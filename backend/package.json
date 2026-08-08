@@ -1,0 +1,20 @@
+{
+  "name": "piano-friend-backend",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "hash-password": "node scripts/hash-password.mjs",
+    "backfill": "node scripts/backfill.mjs",
+    "backfill:dry-run": "node scripts/backfill.mjs --dry-run"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.876.0",
+    "@aws-sdk/client-s3": "^3.876.0",
+    "@aws-sdk/client-secrets-manager": "^3.876.0",
+    "@aws-sdk/util-dynamodb": "^3.876.0"
+  }
+}

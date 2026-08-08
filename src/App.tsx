@@ -7,7 +7,7 @@ import type { Song } from "./songs/songs";
 import { EAR_LEVELS } from "./ear/earLevels";
 import type { EarLevel } from "./ear/earLevels";
 import { SHEET_MUSIC_LEVELS } from "./sheet/sheetMusicLevels";
-import { logEvent } from "./logging/remoteLog";
+import { endLoggingSession, logEvent } from "./logging/remoteLog";
 import { getUserId, isAuthenticated, setIdentity, clearIdentity } from "./progress/identity";
 import { hydrateProgress } from "./progress/progressStore";
 import StartScreen from "./components/StartScreen";
@@ -23,6 +23,10 @@ import type { ClassRoster } from "./components/AccessCodeScreen";
 import "./components/Screen.css";
 
 type Mode = "start" | "level" | "songSelect" | "song" | "freePlay" | "accessCode" | "studentPicker";
+type PendingAuth =
+  | { kind: "play" }
+  | { kind: "settings" }
+  | { kind: "stage"; stageIndex: number };
 
 const SONG_STAGE_INDEX = 8;
 const LEVEL_18_SONG_STAGE_INDEX = LEVELS.length + 1;
@@ -109,7 +113,7 @@ function stageLabel(stageIndex: number): string {
   return `Level ${level.number} - ${level.title}`;
 }
 
-const DEV_STAGE_OPTIONS = [
+const STAGE_OPTIONS = [
   { value: "start", label: "Start screen" },
   ...Array.from({ length: TOTAL_STAGES }, (_, stageIndex) => ({
     value: String(stageIndex),
@@ -125,13 +129,14 @@ export default function App() {
   const [song, setSong] = useState<Song | null>(null);
   const [songReturnIndex, setSongReturnIndex] = useState<number | null>(null);
   const [songStageCleared, setSongStageCleared] = useState(false);
-  const [showDevStages, setShowDevStages] = useState(false);
-  const [authPending, setAuthPending] = useState<"play" | "settings" | null>(null);
+  const [showLevelMenu, setShowLevelMenu] = useState(false);
+  const [authPending, setAuthPending] = useState<PendingAuth | null>(null);
   const [roster, setRoster] = useState<ClassRoster | null>(null);
 
   const lastIndex = TOTAL_STAGES - 1;
   const allLevelsDone = highestLevel >= TOTAL_STAGES;
   const resumeIndex = Math.min(highestLevel, lastIndex);
+  const authenticated = isAuthenticated();
 
   function goToStage(stageIndex: number) {
     setLevelIndex(stageIndex);
@@ -158,10 +163,10 @@ export default function App() {
   }
 
   function handlePlay() {
-    if (isAuthenticated()) {
+    if (authenticated) {
       proceedToPlay();
     } else {
-      setAuthPending("play");
+      setAuthPending({ kind: "play" });
       setMode("accessCode");
     }
   }
@@ -174,11 +179,11 @@ export default function App() {
   }
 
   function handleSettings() {
-    if (isAuthenticated()) {
+    if (authenticated) {
       setMode("start");
       // StartScreen will handle showing settings internally
     } else {
-      setAuthPending("settings");
+      setAuthPending({ kind: "settings" });
       setMode("accessCode");
     }
   }
@@ -198,8 +203,10 @@ export default function App() {
     setAuthPending(null);
     setRoster(null);
 
-    if (pending === "play") {
+    if (pending?.kind === "play") {
       proceedToPlay();
+    } else if (pending?.kind === "stage") {
+      goToStage(pending.stageIndex);
     } else {
       setMode("start");
     }
@@ -212,7 +219,7 @@ export default function App() {
   }
 
   function handleSwitchStudent() {
-    setAuthPending("settings");
+    setAuthPending({ kind: "settings" });
     setRoster(null);
     setMode("accessCode");
   }
@@ -265,52 +272,60 @@ export default function App() {
     }
   }
 
-  function handleDevStageChange(stage: string) {
-    setShowDevStages(false);
-    setSong(null);
-    setSongReturnIndex(null);
+  function handleLevelMenuChange(stage: string) {
+    setShowLevelMenu(false);
 
     if (stage === "start") {
+      endLoggingSession("manual");
+      setSong(null);
+      setSongReturnIndex(null);
       setMode("start");
       return;
     }
 
-    if (stage === "songSelect") {
-      setLevelIndex(SONG_STAGE_INDEX);
-      setMode("songSelect");
+    const stageIndex = Number(stage);
+    if (!Number.isInteger(stageIndex) || stageIndex < 0 || stageIndex > lastIndex) {
       return;
     }
 
-    goToStage(Number(stage));
+    if (!authenticated) {
+      setAuthPending({ kind: "stage", stageIndex });
+      setMode("accessCode");
+      return;
+    }
+
+    setSong(null);
+    setSongReturnIndex(null);
+    goToStage(stageIndex);
   }
 
-  const devStageValue = mode === "start" ? mode : String(levelIndex);
+  const levelMenuValue = mode === "start" ? mode : String(levelIndex);
 
-  const devStagePicker = (
+  const levelMenu = authenticated ? (
     <aside className="dev-stage-picker" aria-label="Level jump menu">
       <button
         type="button"
         className="dev-stage-picker__button"
         aria-label="Open level jump menu"
-        aria-expanded={showDevStages}
-        onClick={() => setShowDevStages((open) => !open)}
+        aria-expanded={showLevelMenu}
+        onClick={() => setShowLevelMenu((open) => !open)}
       >
         {"\u2302"}
       </button>
-      {showDevStages ? (
+      {showLevelMenu ? (
         <div className="dev-stage-picker__panel" role="menu">
-          {DEV_STAGE_OPTIONS.map((option) => (
+          {STAGE_OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
               className={[
                 "dev-stage-picker__item",
-                option.value === devStageValue ? "is-current" : "",
+                option.value === levelMenuValue ? "is-current" : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
               role="menuitem"
-              onClick={() => handleDevStageChange(option.value)}
+              onClick={() => handleLevelMenuChange(option.value)}
             >
               {option.label}
             </button>
@@ -318,7 +333,7 @@ export default function App() {
         </div>
       ) : null}
     </aside>
-  );
+  ) : null;
 
   const learnerKey = getUserId();
 
@@ -348,7 +363,7 @@ export default function App() {
   if (mode === "start") {
     return (
       <div key={learnerKey}>
-        {devStagePicker}
+        {levelMenu}
         <StartScreen
           onPlay={handlePlay}
           onFreePlay={handleFreePlay}
@@ -365,8 +380,13 @@ export default function App() {
   if (mode === "freePlay") {
     return (
       <div key={learnerKey}>
-        {devStagePicker}
-        <FreePlayScreen onBack={() => setMode("start")} />
+        {levelMenu}
+        <FreePlayScreen
+          onBack={() => {
+            endLoggingSession("manual");
+            setMode("start");
+          }}
+        />
       </div>
     );
   }
@@ -374,7 +394,7 @@ export default function App() {
   if (mode === "songSelect") {
     return (
       <div key={learnerKey}>
-        {devStagePicker}
+        {levelMenu}
         <SongSelect
           levelNumber={songReturnIndex !== null ? levelIndex + 1 : undefined}
           title={
@@ -412,7 +432,7 @@ export default function App() {
     };
     return (
       <div key={learnerKey}>
-        {devStagePicker}
+        {levelMenu}
         <LevelStage
           key={`song-${song.id}`}
           level={songLevel}
@@ -422,6 +442,8 @@ export default function App() {
               : `\u266B ${song.title}`
           }
           continuous
+          songId={song.id}
+          stageIndex={levelIndex}
           onLevelComplete={handleSongComplete}
         />
       </div>
@@ -433,7 +455,7 @@ export default function App() {
 
   return (
     <div key={learnerKey}>
-      {devStagePicker}
+      {levelMenu}
       {levelIndex === FINGER_NUMBERS_STAGE_INDEX ? (
         <FingerNumbersLevel
           key="finger-numbers"
