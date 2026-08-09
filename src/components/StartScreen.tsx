@@ -91,9 +91,9 @@ export default function StartScreen({
     <div className="screen">
       <div className="start-card">
         <div className="start-logo-icon">{"\uD83C\uDFB5"}</div>
-        <div className="start-logo-title">
+        <h1 className="start-logo-title">
           Piano<br /><span>Friend</span>
-        </div>
+        </h1>
 
         <button
           className="btn btn-primary"

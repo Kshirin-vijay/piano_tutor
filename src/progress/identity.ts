@@ -46,11 +46,11 @@ export function getUserId(): string {
   return getOrCreateDeviceId();
 }
 
-export function getTeacherId(): string | null {
+export function getTeacherId(): string {
   return localStorage.getItem(CLASS_CODE_KEY) ?? "public";
 }
 
-export function getStudentId(): string | null {
+export function getStudentId(): string {
   const code = localStorage.getItem(CLASS_CODE_KEY);
   const sid = localStorage.getItem(STUDENT_ID_KEY);
   if (code && sid) return `${code}__${sid}`;

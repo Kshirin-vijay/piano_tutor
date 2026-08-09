@@ -70,20 +70,56 @@ function readBody(req: import("http").IncomingMessage): Promise<string> {
   });
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+async function readJsonBody(
+  req: import("http").IncomingMessage,
+): Promise<Record<string, unknown> | null> {
+  try {
+    const body: unknown = JSON.parse(await readBody(req));
+    return isRecord(body) ? body : null;
+  } catch {
+    return null;
+  }
+}
+
+function sendJson(
+  res: import("http").ServerResponse,
+  statusCode: number,
+  body: Record<string, unknown>,
+): void {
+  res.statusCode = statusCode;
+  res.setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify(body));
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function devApiSink(dashboardPassword: string): Plugin {
   return {
     name: "dev-api-sink",
     configureServer(server) {
       server.middlewares.use("/api/dashboard/auth", async (req, res) => {
         if (req.method !== "POST") { res.statusCode = 405; res.end("{}"); return; }
-        const body = JSON.parse(await readBody(req));
-        res.setHeader("Content-Type", "application/json");
-        if (!dashboardPassword || body.password !== dashboardPassword) {
-          res.statusCode = 401;
-          res.end(JSON.stringify({ error: "Invalid credentials." }));
+        const body = await readJsonBody(req);
+        if (!body) {
+          sendJson(res, 400, { error: "Request body must be a JSON object." });
           return;
         }
-        res.end(JSON.stringify({ token: "dev-dashboard-token", expiresInSeconds: 28800 }));
+        if (!dashboardPassword || body.password !== dashboardPassword) {
+          sendJson(res, 401, { error: "Invalid credentials." });
+          return;
+        }
+        sendJson(res, 200, { token: "dev-dashboard-token", expiresInSeconds: 28800 });
       });
 
       server.middlewares.use("/api/dashboard/report", (req, res) => {
@@ -109,12 +145,25 @@ function devApiSink(dashboardPassword: string): Plugin {
 
       server.middlewares.use("/api/auth/student", async (req, res) => {
         if (req.method !== "POST") { res.statusCode = 405; res.end("{}"); return; }
-        const body = JSON.parse(await readBody(req));
-        const code = (body.code ?? "").toUpperCase();
+        const body = await readJsonBody(req);
+        if (!body) {
+          sendJson(res, 400, { error: "Request body must be a JSON object." });
+          return;
+        }
+        const code = String(body.code ?? "").toUpperCase();
         const cls = MOCK_CLASSES[code];
         if (!cls || !cls.active) { res.statusCode = 403; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Invalid class code" })); return; }
-        const name = (body.name ?? "").trim();
-        const id = `${name.toLowerCase()}-${(++mockIdCounter).toString(16).padStart(4, "0")}`;
+        const name = String(body.name ?? "").trim();
+        if (!name || name.length > 30) {
+          sendJson(res, 400, { error: "Name must be between 1 and 30 characters." });
+          return;
+        }
+        const slug = slugify(name);
+        if (!slug) {
+          sendJson(res, 400, { error: "Name must contain at least one letter or number." });
+          return;
+        }
+        const id = `${slug}-${(++mockIdCounter).toString(16).padStart(4, "0")}`;
         const added = { id, label: name };
         cls.students.push(added);
         res.setHeader("Content-Type", "application/json");
@@ -123,8 +172,12 @@ function devApiSink(dashboardPassword: string): Plugin {
 
       server.middlewares.use("/api/auth", async (req, res) => {
         if (req.method !== "POST") { res.statusCode = 405; res.end("{}"); return; }
-        const body = JSON.parse(await readBody(req));
-        const code = (body.code ?? "").toUpperCase();
+        const body = await readJsonBody(req);
+        if (!body) {
+          sendJson(res, 400, { error: "Request body must be a JSON object." });
+          return;
+        }
+        const code = String(body.code ?? "").toUpperCase();
         const cls = MOCK_CLASSES[code];
         if (!cls || !cls.active) { res.statusCode = 403; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Invalid class code" })); return; }
         res.setHeader("Content-Type", "application/json");
