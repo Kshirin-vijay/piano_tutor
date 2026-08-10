@@ -11,5 +11,7 @@ dev-dist
 tsconfig.tsbuildinfo
 tmp_samples/
 logs/
+piano_logs.json
 .cursor/
 .vercel
+backend/.artifacts/

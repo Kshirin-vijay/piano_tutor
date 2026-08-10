@@ -1,9 +1,31 @@
 .settings-card {
+  position: relative;
   gap: 14px;
   text-align: left;
   align-items: stretch;
   max-height: 92vh;
   overflow-y: auto;
+}
+
+.settings-done-top {
+  position: sticky;
+  top: 0;
+  align-self: flex-end;
+  z-index: 2;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(30, 58, 95, 0.08);
+  color: #1E3A5F;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.settings-done-top:hover {
+  background: rgba(30, 58, 95, 0.15);
 }
 
 .settings-card .card__title,

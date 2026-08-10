@@ -98,9 +98,9 @@ export const LEVELS: Level[] = [
     notes: ["C"],
     title: "Meet C",
     tasks: [
-      { type: "tap", note: "C", times: 1 },
-      { type: "tap", note: "C", times: 1 },
-      { type: "tap", note: "C", times: 1 },
+      { type: "hold", note: "C", counts: 1 },
+      { type: "hold", note: "C", counts: 1 },
+      { type: "hold", note: "C", counts: 1 },
     ],
   },
   {
@@ -114,9 +114,9 @@ export const LEVELS: Level[] = [
     notes: ["D"],
     title: "Meet D",
     tasks: [
-      { type: "tap", note: "D", times: 1 },
-      { type: "tap", note: "D", times: 1 },
-      { type: "tap", note: "D", times: 1 },
+      { type: "hold", note: "D", counts: 1 },
+      { type: "hold", note: "D", counts: 1 },
+      { type: "hold", note: "D", counts: 1 },
     ],
   },
   {
@@ -130,10 +130,10 @@ export const LEVELS: Level[] = [
     notes: ["C", "D"],
     title: "C and D together",
     tasks: [
-      { type: "tap", note: "C", times: 1 },
-      { type: "tap", note: "D", times: 1 },
-      { type: "tap", note: "C", times: 1 },
-      { type: "tap", note: "D", times: 1 },
+      { type: "hold", note: "C", counts: 1 },
+      { type: "hold", note: "D", counts: 1 },
+      { type: "hold", note: "C", counts: 1 },
+      { type: "hold", note: "D", counts: 1 },
     ],
   },
   {
@@ -153,9 +153,9 @@ export const LEVELS: Level[] = [
     notes: ["E"],
     title: "Meet E",
     tasks: [
-      { type: "tap", note: "E", times: 1 },
-      { type: "tap", note: "E", times: 1 },
-      { type: "tap", note: "E", times: 1 },
+      { type: "hold", note: "E", counts: 1 },
+      { type: "hold", note: "E", counts: 1 },
+      { type: "hold", note: "E", counts: 1 },
     ],
   },
   {
@@ -169,9 +169,9 @@ export const LEVELS: Level[] = [
     notes: ["F"],
     title: "Meet F",
     tasks: [
-      { type: "tap", note: "F", times: 1 },
-      { type: "tap", note: "F", times: 1 },
-      { type: "tap", note: "F", times: 1 },
+      { type: "hold", note: "F", counts: 1 },
+      { type: "hold", note: "F", counts: 1 },
+      { type: "hold", note: "F", counts: 1 },
     ],
   },
   {
@@ -185,9 +185,9 @@ export const LEVELS: Level[] = [
     notes: ["G"],
     title: "Meet G",
     tasks: [
-      { type: "tap", note: "G", times: 1 },
-      { type: "tap", note: "G", times: 1 },
-      { type: "tap", note: "G", times: 1 },
+      { type: "hold", note: "G", counts: 1 },
+      { type: "hold", note: "G", counts: 1 },
+      { type: "hold", note: "G", counts: 1 },
     ],
   },
   {
@@ -201,9 +201,9 @@ export const LEVELS: Level[] = [
     notes: ["A"],
     title: "Meet A",
     tasks: [
-      { type: "tap", note: "A", times: 1 },
-      { type: "tap", note: "A", times: 1 },
-      { type: "tap", note: "A", times: 1 },
+      { type: "hold", note: "A", counts: 1 },
+      { type: "hold", note: "A", counts: 1 },
+      { type: "hold", note: "A", counts: 1 },
     ],
   },
   {
@@ -217,9 +217,9 @@ export const LEVELS: Level[] = [
     notes: ["B"],
     title: "Meet B",
     tasks: [
-      { type: "tap", note: "B", times: 1 },
-      { type: "tap", note: "B", times: 1 },
-      { type: "tap", note: "B", times: 1 },
+      { type: "hold", note: "B", counts: 1 },
+      { type: "hold", note: "B", counts: 1 },
+      { type: "hold", note: "B", counts: 1 },
     ],
   },
   {

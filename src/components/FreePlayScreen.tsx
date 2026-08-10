@@ -7,7 +7,6 @@ import {
 } from "react";
 import type { NoteName } from "../audio/piano";
 import { startNote, stopNote } from "../audio/piano";
-import MusicDecor from "./MusicDecor";
 import PianoKeyboard, { ALL_KEYS } from "./PianoKeyboard";
 import "./FreePlayScreen.css";
 
@@ -122,7 +121,6 @@ export default function FreePlayScreen({ onBack }: FreePlayScreenProps) {
 
   return (
     <div className="stage free-play">
-      <MusicDecor />
       <header className="free-play__header">
         <button className="free-play__back" type="button" onClick={onBack}>
           {"\u2039"} Home

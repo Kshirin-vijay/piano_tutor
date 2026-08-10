@@ -11,26 +11,33 @@ export type StageKind = "level" | "song" | "ear" | "sheet" | "finger";
 
 export type AttemptOutcome = "passed" | "replayed";
 
+export interface AttemptContext {
+  attemptId: string;
+  levelNumber: number;
+  title: string;
+  kind: StageKind;
+  attemptNumber: number;
+  songId?: string;
+  stageIndex?: number;
+}
+
 export type AppEvent =
-  | { type: "task.succeeded"; note?: string; taskIndex: number }
-  | { type: "task.mistake"; expected?: string; got: string; taskIndex?: number }
+  | ({ type: "task.succeeded"; note?: string; taskIndex: number } & AttemptContext)
+  | ({
+      type: "task.mistake";
+      expected?: string;
+      got: string;
+      taskIndex?: number;
+    } & AttemptContext)
   | { type: "hesitation"; ms: number }
-  | { type: "level.replayed"; levelNumber: number }
-  | {
+  | ({ type: "level.replayed" } & AttemptContext)
+  | ({
       type: "level.started";
-      levelNumber: number;
-      title: string;
-      kind: StageKind;
-      attemptNumber: number;
       totalTasks: number;
-    }
-  | { type: "level.completed"; levelNumber: number; kind: StageKind; clean: boolean }
-  | {
+    } & AttemptContext)
+  | ({ type: "level.completed"; clean: boolean } & AttemptContext)
+  | ({
       type: "level.attempt_finished";
-      levelNumber: number;
-      title: string;
-      kind: StageKind;
-      attemptNumber: number;
       outcome: AttemptOutcome;
       clean: boolean;
       durationMs: number;
@@ -39,7 +46,17 @@ export type AppEvent =
       totalTasks: number;
       mistakesByExpected: Record<string, number>;
       mistakesByWrongKey: Record<string, number>;
-    };
+    } & AttemptContext)
+  | ({
+      type: "level.abandoned";
+      durationMs: number;
+      taskSuccesses: number;
+      taskMistakes: number;
+      totalTasks: number;
+      reason: "navigation" | "page_hidden" | "unmount";
+      mistakesByExpected: Record<string, number>;
+      mistakesByWrongKey: Record<string, number>;
+    } & AttemptContext);
 
 export type EventType = AppEvent["type"];
 

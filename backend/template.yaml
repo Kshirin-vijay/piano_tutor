@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Piano Friend dashboard analytics resources (events table, dashboard API).
+
+Parameters:
+  StageName:
+    Type: String
+    Default: prod
+  CorsOrigin:
+    Type: String
+    Default: https://kshirinvijay.com
+  LocalCorsOrigin:
+    Type: String
+    Default: http://127.0.0.1:5175
+  LogBucketName:
+    Type: String
+    Default: kshirinvijay-piano-logs
+  ClassesTableName:
+    Type: String
+    Default: piano-friend-classes
+  TeacherIds:
+    Type: String
+    Default: ""
+    Description: Optional comma-separated teacher/class codes. Empty means all active classes plus public.
+  DashboardSecretArn:
+    Type: String
+    Description: Secrets Manager ARN containing passwordHash, passwordSalt, and signingSecret JSON.
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Architectures:
+      - arm64
+    Timeout: 30
+    MemorySize: 512
+
+Resources:
+  EventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: piano-friend-events
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: teacherDay
+          AttributeType: S
+        - AttributeName: eventKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: teacherDay
+          KeyType: HASH
+        - AttributeName: eventKey
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: app
+          Value: piano-friend
+
+  AuthRateLimitTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: piano-friend-dashboard-auth-ratelimit
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: clientKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: clientKey
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: app
+          Value: piano-friend
+
+  DashboardHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref StageName
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref CorsOrigin
+          - !Ref LocalCorsOrigin
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+
+  DashboardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: piano-friend-dashboard
+      CodeUri: .
+      Handler: lambdas/dashboard/index.handler
+      Description: Private teacher dashboard auth and report API
+      Environment:
+        Variables:
+          EVENTS_TABLE: !Ref EventsTable
+          CLASSES_TABLE: !Ref ClassesTableName
+          AUTH_RATE_TABLE: !Ref AuthRateLimitTable
+          DASHBOARD_SECRET_ARN: !Ref DashboardSecretArn
+          TEACHER_IDS: !Ref TeacherIds
+          LOG_BUCKET: !Ref LogBucketName
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EventsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AuthRateLimitTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ClassesTableName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref DashboardSecretArn
+      Events:
+        DashboardAuth:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DashboardHttpApi
+            Path: /dashboard/auth
+            Method: POST
+        DashboardReport:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DashboardHttpApi
+            Path: /dashboard/report
+            Method: GET
+
+Outputs:
+  DashboardApiEndpoint:
+    Description: Dashboard HTTP API base URL
+    Value: !Sub "https://${DashboardHttpApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+  EventsTableName:
+    Value: !Ref EventsTable
+  AuthRateLimitTableName:
+    Value: !Ref AuthRateLimitTable
+  DashboardFunctionName:
+    Value: !Ref DashboardFunction
+
+# Existing piano-friend-log Lambda
+# ---------------------------------
+# This template intentionally does NOT attach routes to the existing /log API
+# integration to avoid replacing the current API Gateway deployment.
+# After deploying this stack, update the existing log Lambda manually:
+#   1. Package backend/lambdas/log with ../../lib copied or symlinked (see deploy.sh)
+#   2. Set environment variables EVENTS_TABLE and DUAL_WRITE_ENABLED=true
+#   3. Publish a new Lambda version and note the version for rollback.sh

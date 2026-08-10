@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LevelAttemptTracker } from "../logging/levelAttempt";
-import MusicDecor from "./MusicDecor";
 import ProgressDots from "./ProgressDots";
 import { asset } from "../assets";
 import "./FingerNumbersLevel.css";
@@ -138,6 +137,10 @@ export default function FingerNumbersLevel({
     });
   }, [phase, levelNumber]);
 
+  useEffect(() => {
+    return () => trackerRef.current?.abandon("unmount");
+  }, []);
+
   const learnedFinger = fingerByNumber(learnedCount);
   const quizTarget = quizOrder[quizIndex] ?? learnedCount;
   const completedUnits =
@@ -213,8 +216,6 @@ export default function FingerNumbersLevel({
 
   return (
     <div className="finger-level">
-      <MusicDecor />
-
       <header className="finger-level__header">
         <div className="finger-level__eyebrow">Level {levelNumber}</div>
         <h1 className="finger-level__title">Finger numbers</h1>

@@ -1,6 +1,6 @@
 :root {
   /* Calm, low-glare palette */
-  --bg: #f4f1ea;
+  --bg: #FCE4EC;
   --surface: #ffffff;
   --text: #3a3a40;
   --text-soft: #6b6b72;
@@ -48,19 +48,9 @@ body,
 }
 
 body {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(244, 248, 250, 0.22) 0%,
-      rgba(244, 248, 250, 0.4) 48%,
-      rgba(244, 241, 234, 0.58) 100%
-    ),
-    url("/backgrounds/calm-blue-cloud-game-bg.png") center / cover fixed
-      no-repeat,
-    var(--bg);
+  background: var(--bg);
   color: var(--text);
   font-family: var(--font);
-  /* Prevent text selection / long-press menus during play */
   -webkit-user-select: none;
   user-select: none;
   overscroll-behavior: none;

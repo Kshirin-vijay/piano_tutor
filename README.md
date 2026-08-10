@@ -167,6 +167,23 @@ npm run dev
 
 Then open the printed local URL (best on a tablet or in full screen).
 
+### Private practice dashboard
+
+The teacher/parent dashboard is available locally at the printed URL plus
+`#/dashboard` (for example, `http://127.0.0.1:5175/#/dashboard`). Set the exact
+local fallback password as `DASHBOARD_DEV_PASSWORD` in ignored `.env.local`.
+When `VITE_DASHBOARD_API` is configured there, authentication and reports come
+from the protected AWS API instead of the local `piano_logs.json` fallback.
+
+Refresh the local fallback data when needed with:
+
+```bash
+AWS_PROFILE=kshirin npm run dashboard:sync
+```
+
+The production dashboard API, password protection, S3 backfill, and deployment
+instructions are under `backend/`. They are not deployed by the local workflow.
+
 Replace the placeholder emails in `api/betaUsers.ts` with real beta tester
 emails before inviting anyone.
 

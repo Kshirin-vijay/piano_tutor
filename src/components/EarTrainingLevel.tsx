@@ -13,7 +13,6 @@ import PianoKeyboard, { WHITE_KEYS } from "./PianoKeyboard";
 import Instruction from "./Instruction";
 import ProgressDots from "./ProgressDots";
 import Celebration from "./Celebration";
-import MusicDecor from "./MusicDecor";
 import "./LevelStage.css";
 import "./EarTrainingLevel.css";
 
@@ -71,13 +70,15 @@ export default function EarTrainingLevel({
   }, [earLevel, attemptKey]);
 
   useEffect(() => {
-    trackerRef.current = new LevelAttemptTracker({
+    const tracker = new LevelAttemptTracker({
       levelNumber,
       title: earLevel.title,
       kind: "ear",
       attemptNumber: attemptKey + 1,
       totalTasks: earLevel.rounds.length,
     });
+    trackerRef.current = tracker;
+    return () => tracker.abandon("unmount");
   }, [earLevel, levelNumber, attemptKey]);
 
   // Build audio up front so the listen cue and key taps are ready.
@@ -177,8 +178,6 @@ export default function EarTrainingLevel({
 
   return (
     <div className="stage">
-      <MusicDecor />
-
       <header className="stage__header">
         <div className="stage__level">
           Level {levelNumber}

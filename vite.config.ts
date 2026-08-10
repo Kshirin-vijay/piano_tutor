@@ -1,158 +1,220 @@
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
-import { findBetaUser, normalizeEmail } from "./api/betaUsers";
-import { appendUsageLog } from "./api/usageLog";
+import { readFileSync } from "node:fs";
+import { aggregateTeacherReport } from "./backend/lib/aggregate.mjs";
 
-// Serve from the site root by default (e.g. Vercel), or from a sub-path on an
-// existing site (e.g. AWS S3 at "/piano/") by building with:
-//   VITE_BASE=/piano/ npm run build
-const base = process.env.VITE_BASE ?? "/";
+const MOCK_CLASSES: Record<string, { teacher: string; active: boolean; students: { id: string; label: string }[] }> = {
+  "DEV-CLASS": { teacher: "Dev Teacher", active: true, students: [{ id: "tester-a1b2", label: "Tester" }] },
+};
+let mockIdCounter = 0;
+let mockPlayCounter = 42;
 
-/**
- * Local-dev stand-in for Vercel's /api/login so `npm run dev` can check the
- * allowlist without putting emails in the client bundle.
- */
-function betaLoginDevApi(): Plugin {
+function buildLocalDashboardReport(from: string, to: string, timezone: string) {
+  try {
+    const events = JSON.parse(
+      readFileSync(new URL("./piano_logs.json", import.meta.url), "utf8")
+    ) as Array<Record<string, unknown>>;
+    const teacherIds = [
+      ...new Set(
+        events
+          .map((event) => String(event.teacherId ?? "public"))
+          .filter(
+            (teacherId) =>
+              teacherId === "public" ||
+              events.some(
+                (event) =>
+                  event.teacherId === teacherId &&
+                  String(event.studentId ?? "").startsWith(`${teacherId}__`)
+              )
+          )
+      ),
+    ].sort();
+    const rosterByTeacher = new Map();
+    for (const teacherId of teacherIds) {
+      const students = new Map<string, string>();
+      for (const event of events) {
+        if (event.teacherId !== teacherId || teacherId === "public") continue;
+        const fullId = String(event.studentId ?? "");
+        if (!fullId.startsWith(`${teacherId}__`)) continue;
+        const id = fullId.slice(teacherId.length + 2);
+        students.set(id, String(event.studentLabel ?? id));
+      }
+      rosterByTeacher.set(teacherId, {
+        teacherId,
+        teacherName: teacherId === "public" ? "Public practice" : teacherId,
+        students: [...students].map(([id, label]) => ({ id, label })),
+      });
+    }
+    return {
+      generatedAt: new Date().toISOString(),
+      ...aggregateTeacherReport({
+        events,
+        rosterByTeacher,
+        teacherIds,
+        from,
+        to,
+        timezone,
+      }),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function readBody(req: import("http").IncomingMessage): Promise<string> {
+  return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (c: Buffer) => chunks.push(c));
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+  });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+async function readJsonBody(
+  req: import("http").IncomingMessage,
+): Promise<Record<string, unknown> | null> {
+  try {
+    const body: unknown = JSON.parse(await readBody(req));
+    return isRecord(body) ? body : null;
+  } catch {
+    return null;
+  }
+}
+
+function sendJson(
+  res: import("http").ServerResponse,
+  statusCode: number,
+  body: Record<string, unknown>,
+): void {
+  res.statusCode = statusCode;
+  res.setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify(body));
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function devApiSink(dashboardPassword: string): Plugin {
   return {
-    name: "beta-login-dev-api",
+    name: "dev-api-sink",
     configureServer(server) {
-      server.middlewares.use("/api/login", (req, res, next) => {
+      server.middlewares.use("/api/dashboard/auth", async (req, res) => {
+        if (req.method !== "POST") { res.statusCode = 405; res.end("{}"); return; }
+        const body = await readJsonBody(req);
+        if (!body) {
+          sendJson(res, 400, { error: "Request body must be a JSON object." });
+          return;
+        }
+        if (!dashboardPassword || body.password !== dashboardPassword) {
+          sendJson(res, 401, { error: "Invalid credentials." });
+          return;
+        }
+        sendJson(res, 200, { token: "dev-dashboard-token", expiresInSeconds: 28800 });
+      });
+
+      server.middlewares.use("/api/dashboard/report", (req, res) => {
+        const url = new URL(req.url ?? "", "http://localhost");
+        const to = url.searchParams.get("to") ?? new Date().toISOString().slice(0, 10);
+        const from = url.searchParams.get("from") ?? to;
+        const timezone = url.searchParams.get("timezone") ?? "America/Los_Angeles";
+        const report = buildLocalDashboardReport(from, to, timezone);
+        res.setHeader("Content-Type", "application/json");
+        if (!report) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: "Could not read piano_logs.json" }));
+          return;
+        }
+        res.end(JSON.stringify(report));
+      });
+
+      server.middlewares.use("/api/counter", (req, res) => {
+        if (req.method === "POST") mockPlayCounter++;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ totalPlays: mockPlayCounter }));
+      });
+
+      server.middlewares.use("/api/auth/student", async (req, res) => {
+        if (req.method !== "POST") { res.statusCode = 405; res.end("{}"); return; }
+        const body = await readJsonBody(req);
+        if (!body) {
+          sendJson(res, 400, { error: "Request body must be a JSON object." });
+          return;
+        }
+        const code = String(body.code ?? "").toUpperCase();
+        const cls = MOCK_CLASSES[code];
+        if (!cls || !cls.active) { res.statusCode = 403; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Invalid class code" })); return; }
+        const name = String(body.name ?? "").trim();
+        if (!name || name.length > 30) {
+          sendJson(res, 400, { error: "Name must be between 1 and 30 characters." });
+          return;
+        }
+        const slug = slugify(name);
+        if (!slug) {
+          sendJson(res, 400, { error: "Name must contain at least one letter or number." });
+          return;
+        }
+        const id = `${slug}-${(++mockIdCounter).toString(16).padStart(4, "0")}`;
+        const added = { id, label: name };
+        cls.students.push(added);
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ code, teacher: cls.teacher, students: cls.students, added }));
+      });
+
+      server.middlewares.use("/api/auth", async (req, res) => {
+        if (req.method !== "POST") { res.statusCode = 405; res.end("{}"); return; }
+        const body = await readJsonBody(req);
+        if (!body) {
+          sendJson(res, 400, { error: "Request body must be a JSON object." });
+          return;
+        }
+        const code = String(body.code ?? "").toUpperCase();
+        const cls = MOCK_CLASSES[code];
+        if (!cls || !cls.active) { res.statusCode = 403; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Invalid class code" })); return; }
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ code, teacher: cls.teacher, students: cls.students }));
+      });
+
+      server.middlewares.use("/api/log", (req, res) => {
         if (req.method !== "POST") {
           res.statusCode = 405;
-          res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ error: "Method not allowed." }));
           return;
         }
-
         const chunks: Buffer[] = [];
         req.on("data", (chunk: Buffer) => chunks.push(chunk));
         req.on("end", () => {
-          let email = "";
           try {
-            const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as {
-              email?: unknown;
-            };
-            if (typeof body.email === "string") email = body.email.trim();
+            const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+            console.log("[dev-log]", body.event, body);
           } catch {
-            res.statusCode = 400;
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ error: "Please enter your email." }));
-            return;
+            /* ignore malformed body */
           }
-
-          if (!email) {
-            res.statusCode = 400;
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ error: "Please enter your email." }));
-            return;
-          }
-
-          const user = findBetaUser(email);
           res.setHeader("Content-Type", "application/json");
-          if (!user) {
-            res.statusCode = 403;
-            res.end(
-              JSON.stringify({
-                error: "This email is not on the beta list. Ask for an invite.",
-              })
-            );
-            return;
-          }
-
-          res.statusCode = 200;
-          res.end(
-            JSON.stringify({
-              email: normalizeEmail(user.email),
-              userId: user.userId,
-            })
-          );
+          res.end(JSON.stringify({ ok: true }));
         });
-        req.on("error", () => next());
       });
     },
   };
 }
 
-/** Local-dev stand-in for Vercel's /api/log — writes to logs/ on disk. */
-function usageLogDevApi(): Plugin {
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  const base = process.env.VITE_BASE ?? env.VITE_BASE ?? "/";
   return {
-    name: "usage-log-dev-api",
-    configureServer(server) {
-      server.middlewares.use("/api/log", async (req, res, next) => {
-        if (req.method !== "POST") {
-          res.statusCode = 405;
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: "Method not allowed." }));
-          return;
-        }
-
-        const chunks: Buffer[] = [];
-        req.on("data", (chunk: Buffer) => chunks.push(chunk));
-        req.on("end", () => {
-          void (async () => {
-            try {
-              const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as {
-                teacherId?: unknown;
-                studentId?: unknown;
-                event?: unknown;
-                studentLabel?: unknown;
-                [key: string]: unknown;
-              };
-
-              const teacherId =
-                typeof body.teacherId === "string" ? body.teacherId.trim() : "";
-              const studentId =
-                typeof body.studentId === "string" ? body.studentId.trim() : "";
-              const event =
-                typeof body.event === "string" ? body.event.trim() : "";
-
-              if (!teacherId || !studentId || !event) {
-                res.statusCode = 400;
-                res.setHeader("Content-Type", "application/json");
-                res.end(
-                  JSON.stringify({
-                    error: "Missing teacherId, studentId, or event.",
-                  })
-                );
-                return;
-              }
-
-              const { teacherId: _t, studentId: _s, event: _e, ...rest } = body;
-              await appendUsageLog({
-                ts: new Date().toISOString(),
-                teacherId,
-                studentId,
-                studentLabel:
-                  typeof body.studentLabel === "string"
-                    ? body.studentLabel
-                    : undefined,
-                event,
-                ...rest,
-              });
-
-              res.statusCode = 200;
-              res.setHeader("Content-Type", "application/json");
-              res.end(JSON.stringify({ ok: true }));
-            } catch {
-              res.statusCode = 500;
-              res.setHeader("Content-Type", "application/json");
-              res.end(JSON.stringify({ error: "Failed to write log." }));
-            }
-          })();
-        });
-        req.on("error", () => next());
-      });
-    },
-  };
-}
-
-export default defineConfig({
-  base,
-  plugins: [
+    base,
+    plugins: [
     react(),
-    betaLoginDevApi(),
-    usageLogDevApi(),
+    devApiSink(env.DASHBOARD_DEV_PASSWORD ?? ""),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["icons/apple-touch-icon.png"],
@@ -186,11 +248,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Precache the app shell plus the bundled piano samples and images,
-        // so the app loads and plays fully offline after the first visit.
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2,mp3,wav,ogg}"],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),
-  ],
+    ],
+  };
 });
